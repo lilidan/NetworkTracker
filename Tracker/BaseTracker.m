@@ -50,14 +50,18 @@
     if (host) {
         NSData *data = [[NSData alloc] initWithBytes:buffer length:length];
         NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        NSLog(@"[READ]:%@----%@",host,str);
     }
-    
 }
 
 + (void)trackwrite:(const void *)buffer length:(size_t)length result:(ssize_t)result fd:(int)fd
 {
-    NSData *data = [[NSData alloc] initWithBytes:buffer length:length];
-    NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    NSString *host = [[[self shareInstance] cachedHost] objectForKey:@(fd)];
+    if (host) {
+        NSData *data = [[NSData alloc] initWithBytes:buffer length:length];
+        NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        NSLog(@"[WRITE]:%@----%@",host,str);
+    }
 }
 
 
