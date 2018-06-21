@@ -47,7 +47,7 @@
 + (void)trackRead:(const void *)buffer length:(size_t)length result:(ssize_t)result fd:(int)fd
 {
     NSString *host = [[[self shareInstance] cachedHost] objectForKey:@(fd)];
-    if (host) {
+    if (host && ![host isEqualToString:@"8.8.8.8"]) {
         NSData *data = [[NSData alloc] initWithBytes:buffer length:length];
         NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
         NSLog(@"[READ]:%@----%@",host,str);
@@ -57,7 +57,7 @@
 + (void)trackwrite:(const void *)buffer length:(size_t)length result:(ssize_t)result fd:(int)fd
 {
     NSString *host = [[[self shareInstance] cachedHost] objectForKey:@(fd)];
-    if (host) {
+    if (host && ![host isEqualToString:@"8.8.8.8"]) {
         NSData *data = [[NSData alloc] initWithBytes:buffer length:length];
         NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
         NSLog(@"[WRITE]:%@----%@",host,str);
