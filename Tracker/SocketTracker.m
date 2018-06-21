@@ -18,7 +18,7 @@ ssize_t (*origin_write)(int, const void *, size_t);
 int  (*origin_connect)(int, const struct sockaddr *, socklen_t);
 + (void)load
 {
-    rcd_rebind_symbols((struct rcd_rebinding[4]){
+    rcd_rebind_symbols((struct rcd_rebinding[5]){
         {
             "send",
             objc_send,
@@ -44,7 +44,7 @@ int  (*origin_connect)(int, const struct sockaddr *, socklen_t);
             objc_connect,
             (void *)&origin_connect
         }
-    }, 4);
+    }, 5);
 }
 
 static int objc_connect(int fd, const struct sockaddr *addr, socklen_t length)
@@ -52,7 +52,9 @@ static int objc_connect(int fd, const struct sockaddr *addr, socklen_t length)
     int result = origin_connect(fd, addr, length);
     if (result == 0) {
         NSString *host = [TrackerUtils connectedHostFromSocket4:fd];
-        [SocketTracker cacheRemoteHost:host fd:fd];
+        if (host) {
+            [SocketTracker cacheRemoteHost:host fd:fd];
+        }
     }
     return result;
 }

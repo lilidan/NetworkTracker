@@ -46,9 +46,7 @@
 
 + (void)trackRead:(const void *)buffer length:(size_t)length result:(ssize_t)result fd:(int)fd
 {
-    NSDate *date = [NSDate date];
     NSString *host = [[[self shareInstance] cachedHost] objectForKey:@(fd)];
-    NSTimeInterval interval = [[NSDate date] timeIntervalSinceDate:date];
     if (host) {
         NSData *data = [[NSData alloc] initWithBytes:buffer length:length];
         NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
