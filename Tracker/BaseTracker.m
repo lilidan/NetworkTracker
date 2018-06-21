@@ -8,8 +8,10 @@
 
 #import "BaseTracker.h"
 
+
 @interface BaseTracker()
 
+@property (nonatomic,strong) NSMutableDictionary *cachedHost;
 
 @end
 
@@ -32,19 +34,32 @@
     static BaseTracker* sharedInstance;
     dispatch_once(&once, ^{
         sharedInstance = [[BaseTracker alloc] init];
+        sharedInstance.cachedHost = [[NSMutableDictionary alloc] init];
     });
     return sharedInstance;
 }
 
-
-+ (void)trackRead:(const void *)data length:(size_t)length fd:(int)fd
++ (void)cacheRemoteHost:(NSString *)host fd:(int)fd
 {
+    [[[self shareInstance] cachedHost] setObject:host forKey:@(fd)];
+}
+
++ (void)trackRead:(const void *)buffer length:(size_t)length result:(ssize_t)result fd:(int)fd
+{
+    NSDate *date = [NSDate date];
+    NSString *host = [[[self shareInstance] cachedHost] objectForKey:@(fd)];
+    NSTimeInterval interval = [[NSDate date] timeIntervalSinceDate:date];
+    if (host) {
+        NSData *data = [[NSData alloc] initWithBytes:buffer length:length];
+        NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    }
     
 }
 
-+ (void)trackwrite:(const void *)data length:(size_t)length fd:(int)fd
++ (void)trackwrite:(const void *)buffer length:(size_t)length result:(ssize_t)result fd:(int)fd
 {
-    
+    NSData *data = [[NSData alloc] initWithBytes:buffer length:length];
+    NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
 }
 
 
