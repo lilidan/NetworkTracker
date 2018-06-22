@@ -7,7 +7,7 @@
 //
 
 #import "BaseTracker.h"
-
+#import "TrackerUtils.h"
 
 @interface BaseTracker()
 
@@ -42,25 +42,31 @@
 + (void)cacheRemoteHost:(NSString *)host fd:(int)fd
 {
     [[[self shareInstance] cachedHost] setObject:host forKey:@(fd)];
+    NSLog(@"%@",[[self shareInstance] cachedHost]);
 }
 
 + (void)trackRead:(const void *)buffer length:(size_t)length result:(ssize_t)result fd:(int)fd
 {
-    NSString *host = [[[self shareInstance] cachedHost] objectForKey:@(fd)];
-    if (host && ![host isEqualToString:@"8.8.8.8"]) {
+    NSString *host = [TrackerUtils connectedHostFromSocket4:fd];
+    if (host) {
         NSData *data = [[NSData alloc] initWithBytes:buffer length:length];
         NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        NSLog(@"[READ]:%@----%@",host,str);
+        [BaseTracker cacheRemoteHost:host fd:fd];
+    }else{
+
     }
+
 }
 
 + (void)trackwrite:(const void *)buffer length:(size_t)length result:(ssize_t)result fd:(int)fd
 {
-    NSString *host = [[[self shareInstance] cachedHost] objectForKey:@(fd)];
-    if (host && ![host isEqualToString:@"8.8.8.8"]) {
+    NSString *host = [TrackerUtils connectedHostFromSocket4:fd];
+    if (host) {
         NSData *data = [[NSData alloc] initWithBytes:buffer length:length];
         NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        NSLog(@"[WRITE]:%@----%@",host,str);
+        [BaseTracker cacheRemoteHost:host fd:fd];
+    }else{
+
     }
 }
 
