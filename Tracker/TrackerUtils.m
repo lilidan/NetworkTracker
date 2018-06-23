@@ -38,9 +38,15 @@
     {
         return nil;
     }
-    return [self hostFromSockaddr4:&sockaddr4];
+    uint16_t port = [self portFromSockaddr4:&sockaddr4];
+    NSString *host = [self hostFromSockaddr4:&sockaddr4];
+    return [NSString stringWithFormat:@"%@:%d",host,port];
 }
 
++ (uint16_t)portFromSockaddr4:(const struct sockaddr_in *)pSockaddr4
+{
+    return ntohs(pSockaddr4->sin_port);
+}
 
 
 @end
