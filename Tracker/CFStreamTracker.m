@@ -8,7 +8,7 @@
 
 #import "CFStreamTracker.h"
 #import "fishhook.h"
-
+#import <CFNetwork/CFNetwork.h>
 
 @implementation CFStreamTracker
 
@@ -16,10 +16,17 @@ CFIndex (*origin_CFReadStreamRead)(CFReadStreamRef stream, UInt8 *buffer, CFInde
 CFIndex (*origin_CFWriteStreamWrite)(CFWriteStreamRef stream, const UInt8 *buffer, CFIndex bufferLength);
 Boolean (*origin_CFReadStreamOpen)(CFReadStreamRef stream);
 Boolean (*origin_CFWriteStreamOpen)(CFWriteStreamRef stream);
+void* (*origin_CFURLConnectionCreate)(CFAllocatorRef allocator, void* request, const void *ctx);
+void* (*origin__SocketStreamRead)(CFReadStreamRef stream, UInt8* buffer, CFIndex bufferLength,
+                                  CFStreamError* error, Boolean* atEOF, void* ctxt);
+
+Boolean (*origin_CFReadStreamSetClient)(CFReadStreamRef stream, CFOptionFlags streamEvents, CFReadStreamClientCallBack clientCB, CFStreamClientContext *clientContext);
+void (*origin_CFURLConnectionStart)(void * connection);
+
 
 + (void)load
 {
-    rcd_rebind_symbols((struct rcd_rebinding[4]){
+    int result = rcd_rebind_symbols((struct rcd_rebinding[8]){
         {
             "CFReadStreamRead",
             objc_CFReadStreamRead,
@@ -39,8 +46,58 @@ Boolean (*origin_CFWriteStreamOpen)(CFWriteStreamRef stream);
             "CFWriteStreamOpen",
             objc_CFWriteStreamOpen,
             (void *)&origin_CFWriteStreamOpen
+        },
+        {
+            "CFURLConnectionCreate",
+            objc_CFURLConnectionCreate,
+            (void *)&origin_CFURLConnectionCreate
+        },
+        {
+            "_SocketStreamRead",
+            objc__SocketStreamRead,
+            (void *)&origin__SocketStreamRead
+        },
+        {
+            "CFReadStreamSetClient",
+            objc_CFReadStreamSetClient,
+            (void *)&origin_CFReadStreamSetClient
+        },
+        {
+            "CFURLConnectionStart",
+            objc_CFURLConnectionStart,
+            (void *)&origin_CFURLConnectionStart
         }
-    }, 4);
+    }, 8);
+    NSLog(@"%d",result);
+}
+
+void objc_CFURLConnectionStart(void *connection)
+{
+    origin_CFURLConnectionStart(connection);
+}
+
+Boolean objc_CFReadStreamSetClient(CFReadStreamRef stream, CFOptionFlags streamEvents, CFReadStreamClientCallBack clientCB, CFStreamClientContext *clientContext)
+{
+    Boolean result = origin_CFReadStreamSetClient(stream,streamEvents,clientCB,clientContext);
+    CFTypeRef type = CFReadStreamCopyProperty(stream,kCFStreamPropertySocketRemoteHostName);
+    if (type) {
+        CFTypeRef fd = CFReadStreamCopyProperty(stream,kCFStreamPropertySocketNativeHandle);
+        [BaseTracker cacheRemoteHost:(__bridge NSString *)type fd:(__bridge NSString *)fd];
+    }
+    return result;
+}
+
+void* objc__SocketStreamRead(CFReadStreamRef stream, UInt8* buffer, CFIndex bufferLength,
+                             CFStreamError* error, Boolean* atEOF, void* ctxt)
+{
+    void *result = origin__SocketStreamRead(stream,buffer,bufferLength,error,atEOF,ctxt);
+    return result;
+}
+
+void* objc_CFURLConnectionCreate(CFAllocatorRef allocator, void *request, const void *ctx)
+{
+    void *result = origin_CFURLConnectionCreate(allocator,request,ctx);
+    return result;
 }
 
 static Boolean objc_CFWriteStreamOpen(CFWriteStreamRef stream)
@@ -57,6 +114,7 @@ static Boolean objc_CFReadStreamOpen(CFReadStreamRef stream)
 
 static CFIndex objc_CFReadStreamRead(CFReadStreamRef stream, UInt8 *buffer, CFIndex bufferLength)
 {
+    
     CFIndex index = origin_CFReadStreamRead(stream,buffer,bufferLength);
     CFTypeRef type = CFReadStreamCopyProperty(stream,kCFStreamPropertySocketRemoteHostName);
     if (type) {
