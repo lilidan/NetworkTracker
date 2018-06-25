@@ -10,9 +10,16 @@
 
 
 typedef NS_ENUM(NSUInteger, TrackerEventType) {
-    TrackerEventTypeConnect,
+    TrackerEventTypeConnect = 0,
     TrackerEventTypeRequest,
     TrackerEventTypeResponse,
+    TrackerEventTypeCFRequest,
+    TrackerEventTypeCFResponse,
+    TrackerEventTypeCFRequestOpen,
+    TrackerEventTypeCFResponseOpen,
+    TrackerEventTypeSSLHandshake,
+    TrackerEventTypeSSLRequest,
+    TrackerEventTypeSSLResponse
 };
 
 @interface TrackEvent : NSObject
@@ -25,9 +32,15 @@ typedef NS_ENUM(NSUInteger, TrackerEventType) {
 @property (nonatomic,strong) NSData *data;
 @property (nonatomic,strong) NSString *content;
 
-- (instancetype)initWithFd:(int)fd addr:(struct sockaddr_in *)addr;//连接
-- (instancetype)initWithType:(TrackerEventType)type fd:(int)fd addr:(struct sockaddr_in *)addr;//连接
+// for socket
+- (instancetype)initWithFd:(int)fd addr:(struct sockaddr_in *)addr;//connect
+- (instancetype)initWithType:(TrackerEventType)type fd:(int)fd addr:(struct sockaddr_in *)addr;
 - (instancetype)initWithType:(TrackerEventType)type fd:(int)fd buffer:(const void *)buffer length:(size_t)length;//socket:read/write
 - (instancetype)initWithType:(TrackerEventType)type fd:(int)fd msg:(struct msghdr *)msg; //socket:msg
+
+// for CFStream/SSL
+- (instancetype)initWithType:(TrackerEventType)type stream:(void *)stream;
+- (instancetype)initWithType:(TrackerEventType)type buffer:(const void *)buffer length:(size_t)length stream:(void *)stream;
+
 
 @end

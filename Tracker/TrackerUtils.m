@@ -49,7 +49,7 @@
     {
         return nil;
     }
-    return [self urlFromSockaddr4:&sockaddr4];
+    return [self hostPortFromSockaddr4:&sockaddr4];
 }
 
 @end

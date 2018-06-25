@@ -23,6 +23,8 @@
 
 @implementation TrackEvent
 
+#pragma mark - socket
+
 - (instancetype)initWithFd:(int)fd addr:(struct sockaddr_in *)addr
 {
     return [self initWithType:TrackerEventTypeConnect fd:fd addr:addr];
@@ -69,6 +71,66 @@
         }
     }
     return self;
+}
+
+# pragma mark - CFStream
+
+- (instancetype)initWithType:(TrackerEventType)type stream:(void *)stream
+{
+    return [self initWithType:type buffer:NULL length:0 stream:stream];
+}
+
+- (instancetype)initWithType:(TrackerEventType)type buffer:(const void *)buffer length:(size_t)length stream:(void *)stream
+{
+    if (self = [super init]) {
+        _type = type;
+        
+        if (type == TrackerEventTypeCFRequest || type == TrackerEventTypeCFRequestOpen) {
+            NSString *fd = (__bridge NSString *)CFWriteStreamCopyProperty(stream,kCFStreamPropertySocketNativeHandle);
+            _fd = fd.intValue;
+            _host = (__bridge NSString *)CFWriteStreamCopyProperty(stream,kCFStreamPropertySocketRemoteHostName);
+            NSString *port = (__bridge NSString *)CFWriteStreamCopyProperty(stream,kCFStreamPropertySocketRemotePortNumber);
+            _url = [NSString stringWithFormat:@"%@:%@",_host,port];
+        }else if (type == TrackerEventTypeCFResponse || type == TrackerEventTypeCFResponseOpen){
+            NSString *fd = (__bridge NSString *)CFReadStreamCopyProperty(stream,kCFStreamPropertySocketNativeHandle);
+            _fd = fd.intValue;
+            _host = (__bridge NSString *)CFReadStreamCopyProperty(stream,kCFStreamPropertySocketRemoteHostName);
+            NSString *port = (__bridge NSString *)CFReadStreamCopyProperty(stream,kCFStreamPropertySocketRemotePortNumber);
+            _url = [NSString stringWithFormat:@"%@:%@",_host,port];
+        }else{
+            // SSL
+            const void *peerIdPtr;
+            size_t peerLen;
+            OSStatus getId = SSLGetPeerID(stream, &peerIdPtr, &peerLen);
+            if (getId == 0) {
+                NSData *peerIdData = [[NSData alloc] initWithBytes:peerIdPtr length:peerLen];
+                NSString *peerIdStr = [[NSString alloc] initWithData:peerIdData encoding:NSUTF8StringEncoding];
+                _fd = peerIdStr.intValue;
+            }
+            char *domainPtr;
+            size_t domainLen;
+            OSStatus getDomain = SSLGetPeerDomainName(stream, domainPtr, &domainLen);
+            if (getDomain == 0) {
+                NSString *domainStr = [[NSString alloc] initWithUTF8String:domainPtr];
+                _url = _host = domainStr;
+            }
+        }
+        
+        if (!_host) {
+            _url = @"unknown URL";
+            return self; //如果URL获取不到的话直接返回好了
+        }
+        
+        //有URL 才记录
+        _data = [[NSData alloc] initWithBytes:buffer length:length];
+        _content = [[NSString alloc] initWithData:_data encoding:NSUTF8StringEncoding];
+    }
+    return self;
+}
+
+- (NSString *)description
+{
+    return [NSString str]
 }
 
 @end

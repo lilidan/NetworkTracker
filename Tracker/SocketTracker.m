@@ -80,8 +80,6 @@ ssize_t (*origin_recvfrom)(int, void *, size_t, int, struct sockaddr *,socklen_t
     }, 11);
 }
 
-
-
 int objc_accept(int fd, struct sockaddr *addr, socklen_t *length)
 {
     int result = origin_accept(fd,addr,length);
@@ -160,8 +158,5 @@ static ssize_t objc_read(int fd, void *buffer, size_t size)
     [SocketTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeResponse fd:fd buffer:buffer length:size]];
     return result;
 }
-
-
-
 
 @end

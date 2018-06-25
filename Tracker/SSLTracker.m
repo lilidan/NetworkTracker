@@ -11,13 +11,12 @@
 @implementation SSLTracker
 
 OSStatus (*origin_SSLRead)(SSLContextRef context,const void *data,size_t dataLength,size_t *processed);
-
-OSStatus (*origin_SSLWrite)(SSLContextRef context,const void *data,size_t dataLength,size_t *processed);        /* RETURNED */
-
+OSStatus (*origin_SSLWrite)(SSLContextRef context,const void *data,size_t dataLength,size_t *processed);
+OSStatus (*origin_SSLHandshake)(SSLContextRef context);
 
 + (void)load
 {
-    rcd_rebind_symbols((struct rcd_rebinding[2]){
+    rcd_rebind_symbols((struct rcd_rebinding[3]){
         {
             "SSLRead",
             objc_SSLRead,
@@ -27,45 +26,34 @@ OSStatus (*origin_SSLWrite)(SSLContextRef context,const void *data,size_t dataLe
             "SSLWrite",
             objc_SSLWrite,
             (void *)&origin_SSLWrite
+        },
+        {
+            "SSLHandshake",
+            objc_SSLHandshake,
+            (void *)&origin_SSLHandshake
         }
-    }, 2);
+    }, 3);
+}
+
+OSStatus objc_SSLHandshake(SSLContextRef context)
+{
+    OSStatus result = origin_SSLHandshake(context);
+    [SSLTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeSSLHandshake stream:context]];
+
+    return result;
 }
 
 OSStatus objc_SSLRead(SSLContextRef context,const void *data,size_t dataLength,size_t *processed)
 {
     OSStatus result = origin_SSLRead(context,data,dataLength,processed);
-    const void *peerIdPtr;
-    size_t peerLen;
-    OSStatus getId = SSLGetPeerID(context, &peerIdPtr, &peerLen);
-    NSData *pearIdData = [[NSData alloc] initWithBytes:peerIdPtr length:peerLen];
-    NSString *pearIdStr = [[NSString alloc] initWithData:pearIdData encoding:NSUTF8StringEncoding];
-    
-    char *domainPtr;
-    size_t domainLen;
-    OSStatus getDomain = SSLGetPeerDomainName(context, domainPtr, &domainLen);
-    NSString *domainStr = [[NSString alloc] initWithUTF8String:domainPtr];
-    
-    
-    
+    [SSLTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeSSLResponse buffer:data length:dataLength stream:context]];
     return result;
 }
 
 OSStatus objc_SSLWrite(SSLContextRef context,const void *data,size_t dataLength,size_t *processed)
 {
     OSStatus result = origin_SSLWrite(context,data,dataLength,processed);
-    
-    const void *peerIdPtr;
-    size_t peerLen;
-    OSStatus getId = SSLGetPeerID(context, &peerIdPtr, &peerLen);
-    NSData *pearIdData = [[NSData alloc] initWithBytes:peerIdPtr length:peerLen];
-    NSString *pearIdStr = [[NSString alloc] initWithData:pearIdData encoding:NSUTF8StringEncoding];
-    
-    char *domainPtr;
-    size_t domainLen;
-    OSStatus getDomain = SSLGetPeerDomainName(context, domainPtr, &domainLen);
-    NSString *domainStr = [[NSString alloc] initWithUTF8String:domainPtr];
-    
-    
+    [SSLTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeSSLRequest buffer:data length:dataLength stream:context]];
     return result;
 }
 

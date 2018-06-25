@@ -47,8 +47,8 @@
 
 + (void)trackEvent:(TrackEvent *)event
 {
-
+    NSString *className = NSStringFromClass(self);
+    event.trackerName = className;
 }
-
 
 @end
