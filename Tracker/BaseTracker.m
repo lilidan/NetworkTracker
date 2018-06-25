@@ -45,33 +45,10 @@
     NSLog(@"%@",[[self shareInstance] cachedHost]);
 }
 
-+ (void)trackRead:(const void *)buffer length:(size_t)length result:(ssize_t)result fd:(int)fd
++ (void)trackEvent:(TrackEvent *)event
 {
-    NSString *host = [TrackerUtils connectedHostFromSocket4:fd];
-    if (host) {
-        NSData *data = [[NSData alloc] initWithBytes:buffer length:length];
-        NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        [BaseTracker cacheRemoteHost:host fd:fd];
-    }else{
-
-    }
 
 }
-
-+ (void)trackwrite:(const void *)buffer length:(size_t)length result:(ssize_t)result fd:(int)fd
-{
-    NSString *host = [TrackerUtils connectedHostFromSocket4:fd];
-    if (host) {
-        NSData *data = [[NSData alloc] initWithBytes:buffer length:length];
-        NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        [BaseTracker cacheRemoteHost:host fd:fd];
-    }else{
-
-    }
-}
-
-
-
 
 
 @end

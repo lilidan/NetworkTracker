@@ -8,14 +8,13 @@
 
 #import <Foundation/Foundation.h>
 #import "fishhook.h"
+#import "TrackEvent.h"
 
 @interface BaseTracker : NSObject
 
-@property (nonatomic,strong) NSMutableData *data;
-
 + (void)hook;
-+ (void)trackRead:(const void *)buffer length:(size_t)length result:(ssize_t)result fd:(int)fd;
-+ (void)trackwrite:(const void *)buffer length:(size_t)length result:(ssize_t)result fd:(int)fd;
-+ (void)cacheRemoteHost:(NSString *)host fd:(int)fd;
+
++ (void)trackEvent:(TrackEvent *)event;
+
 
 @end

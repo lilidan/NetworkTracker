@@ -11,6 +11,9 @@
 @interface TrackerUtils : NSObject
 
 + (NSString *)hostFromSockaddr4:(const struct sockaddr_in *)pSockaddr4;
-+ (NSString *)connectedHostFromSocket4:(int)socketFD;
++ (uint16_t)portFromSockaddr4:(const struct sockaddr_in *)pSockaddr4;
+
++ (NSString *)hostPortFromSockaddr4:(const struct sockaddr_in *)pSockaddr4;
++ (NSString *)hostPortFromSocket4:(int)socketFD;
 
 @end

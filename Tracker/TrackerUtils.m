@@ -14,6 +14,7 @@
 #import <net/if.h>
 #import <sys/socket.h>
 #import <sys/types.h>
+#import <sys/un.h>
 
 @implementation TrackerUtils
 
@@ -29,7 +30,17 @@
     return [NSString stringWithCString:addrBuf encoding:NSASCIIStringEncoding];
 }
 
-+ (NSString *)connectedHostFromSocket4:(int)socketFD
++ (uint16_t)portFromSockaddr4:(const struct sockaddr_in *)pSockaddr4
+{
+    return ntohs(pSockaddr4->sin_port);
+}
+
++ (NSString *)hostPortFromSockaddr4:(const struct sockaddr_in *)pSockaddr4
+{
+    return [NSString stringWithFormat:@"%@:%d",[self hostFromSockaddr4:pSockaddr4],[self portFromSockaddr4:pSockaddr4]];
+}
+
++ (NSString *)hostPortFromSocket4:(int)socketFD
 {
     struct sockaddr_in sockaddr4;
     socklen_t sockaddr4len = sizeof(sockaddr4);
@@ -38,15 +49,7 @@
     {
         return nil;
     }
-    uint16_t port = [self portFromSockaddr4:&sockaddr4];
-    NSString *host = [self hostFromSockaddr4:&sockaddr4];
-    return [NSString stringWithFormat:@"%@:%d",host,port];
+    return [self urlFromSockaddr4:&sockaddr4];
 }
-
-+ (uint16_t)portFromSockaddr4:(const struct sockaddr_in *)pSockaddr4
-{
-    return ntohs(pSockaddr4->sin_port);
-}
-
 
 @end
