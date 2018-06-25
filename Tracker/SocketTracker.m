@@ -8,6 +8,7 @@
 
 #import "SocketTracker.h"
 #import "TrackerUtils.h"
+#import <sys/socket.h>
 
 @implementation SocketTracker
 
@@ -103,6 +104,9 @@ int   objc_bind(int fd, const struct sockaddr *addr, socklen_t length)
 ssize_t   objc_sendmsg(int fd, const struct msghdr *msg, int flags)
 {
     ssize_t result = origin_sendmsg(fd,msg,flags);
+    
+    NSString *str = [[NSString alloc] initWithBytes:msg->msg_iov->iov_base length:msg->msg_iov->iov_len encoding:NSUTF8StringEncoding];
+    
     [SocketTracker trackwrite:NULL  length:0 result:result fd:fd];
     return result;
 }
