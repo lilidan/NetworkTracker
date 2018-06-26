@@ -48,6 +48,11 @@ ssize_t (*origin_recvfrom)(int, void *, size_t, int, struct sockaddr *,socklen_t
             (void *)&origin_connect
         },
         {
+            "recvmsg",
+            objc_recvmsg,
+            (void *)&origin_recvmsg
+        },
+        {
             "sendmsg",
             objc_sendmsg,
             (void *)&origin_sendmsg
@@ -56,6 +61,11 @@ ssize_t (*origin_recvfrom)(int, void *, size_t, int, struct sockaddr *,socklen_t
             "sendto",
             objc_sendto,
             (void *)&origin_sendto
+        },
+        {
+            "recvfrom",
+            objc_recvfrom,
+            (void *)&origin_recvfrom
         },
         {
             "send",

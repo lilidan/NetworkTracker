@@ -107,7 +107,7 @@
                 NSString *peerIdStr = [[NSString alloc] initWithData:peerIdData encoding:NSUTF8StringEncoding];
                 _fd = peerIdStr.intValue;
             }
-            char *domainPtr;
+            char *domainPtr = NULL;
             size_t domainLen;
             OSStatus getDomain = SSLGetPeerDomainName(stream, domainPtr, &domainLen);
             if (getDomain == 0) {
@@ -130,7 +130,7 @@
 
 - (NSString *)description
 {
-    return [NSString str]
+    return [NSString stringWithFormat:@"[NAME]:%@ - [TYPE]:%lu - [URL]:%@ - [CONTENT]:%@",_trackerName,(unsigned long)_type,_url,_content];
 }
 
 @end

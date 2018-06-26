@@ -13,6 +13,7 @@ typedef NS_ENUM(NSUInteger, TrackerEventType) {
     TrackerEventTypeConnect = 0,
     TrackerEventTypeRequest,
     TrackerEventTypeResponse,
+    TrackerEventTypeRequestMsg,
     TrackerEventTypeCFRequest,
     TrackerEventTypeCFResponse,
     TrackerEventTypeCFRequestOpen,

@@ -49,6 +49,7 @@
 {
     NSString *className = NSStringFromClass(self);
     event.trackerName = className;
+    NSLog(@"%@",event);
 }
 
 @end
