@@ -123,7 +123,7 @@
         }
         
         //有URL 才记录
-        _data = [[NSData alloc] initWithBytes:buffer length:length];
+        _data = [[NSMutableData alloc] initWithBytes:buffer length:length];
         _content = [[NSString alloc] initWithData:_data encoding:NSUTF8StringEncoding];
     }
     return self;
