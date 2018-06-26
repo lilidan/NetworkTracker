@@ -34,11 +34,13 @@ CFSocketError (*origin_CFSocketSendData)(CFSocketRef s, CFDataRef address, CFDat
 CFSocketError objc_CFSocketConnectToAddress(CFSocketRef s, CFDataRef address, CFTimeInterval timeout)
 {
     CFSocketError error = origin_CFSocketConnectToAddress(s, address, timeout);
+    abort();
     return error;
 }
 CFSocketError objc_CFSocketSendData(CFSocketRef s, CFDataRef address, CFDataRef data, CFTimeInterval timeout)
 {
     CFSocketError error = origin_CFSocketSendData(s, address, data,timeout);
+    abort();
     return error;
 }
 

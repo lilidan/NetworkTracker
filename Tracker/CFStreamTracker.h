@@ -7,6 +7,7 @@
 //
 
 #import "BaseTracker.h"
+#import <CFNetwork/CFNetwork.h>
 
 @interface CFStreamTracker : BaseTracker
 

@@ -59,7 +59,7 @@
         
         if (!_url) {
             _url = @"unknown URL";
-            return self; //如果URL获取不到的话直接返回好了
+//            return self; //如果URL获取不到的话直接返回好了
         }
         
         //有URL 才记录
@@ -119,7 +119,7 @@
         
         if (!_host) {
             _url = @"unknown URL";
-            return self; //如果URL获取不到的话直接返回好了
+//            return self; //如果URL获取不到的话直接返回好了
         }
         
         //有URL 才记录
