@@ -90,14 +90,14 @@ ssize_t (*origin_recvfrom)(int, void *, size_t, int, struct sockaddr *,socklen_t
     }, 11);
 }
 
-int objc_accept(int fd, struct sockaddr *addr, socklen_t *length)
+static int objc_accept(int fd, struct sockaddr *addr, socklen_t *length)
 {
     int result = origin_accept(fd,addr,length);
     [SocketTracker trackEvent:[[TrackEvent alloc] initWithFd:fd addr:(struct sockaddr_in *)addr]];
     return result;
 }
 
-int objc_bind(int fd, const struct sockaddr *addr, socklen_t length)
+static int objc_bind(int fd, const struct sockaddr *addr, socklen_t length)
 {
     int result = origin_bind(fd,addr,length);
     [SocketTracker trackEvent:[[TrackEvent alloc] initWithFd:fd addr:(struct sockaddr_in *)addr]];

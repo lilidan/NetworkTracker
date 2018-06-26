@@ -85,15 +85,15 @@
     if (self = [super init]) {
         _type = type;
         
-        if (type == TrackerEventTypeCFRequest || type == TrackerEventTypeCFRequestOpen) {
-            NSString *fd = (__bridge NSString *)CFWriteStreamCopyProperty(stream,kCFStreamPropertySocketNativeHandle);
-            _fd = fd.intValue;
+        if (type == TrackerEventTypeCFRequest || type == TrackerEventTypeCFRequestOpen || type == TrackerEventTypeCFRequestListen) {
+            NSData *fd = (__bridge NSData *)CFWriteStreamCopyProperty(stream,kCFStreamPropertySocketNativeHandle);
+            _fd = [[[NSString alloc] initWithData:fd encoding:NSUTF8StringEncoding] intValue];;
             _host = (__bridge NSString *)CFWriteStreamCopyProperty(stream,kCFStreamPropertySocketRemoteHostName);
             NSString *port = (__bridge NSString *)CFWriteStreamCopyProperty(stream,kCFStreamPropertySocketRemotePortNumber);
             _url = [NSString stringWithFormat:@"%@:%@",_host,port];
-        }else if (type == TrackerEventTypeCFResponse || type == TrackerEventTypeCFResponseOpen){
-            NSString *fd = (__bridge NSString *)CFReadStreamCopyProperty(stream,kCFStreamPropertySocketNativeHandle);
-            _fd = fd.intValue;
+        }else if (type == TrackerEventTypeCFResponse || type == TrackerEventTypeCFResponseOpen || type == TrackerEventTypeCFResponseListen){
+            NSData *fd = (__bridge NSData *)CFReadStreamCopyProperty(stream,kCFStreamPropertySocketNativeHandle);
+            _fd = [[[NSString alloc] initWithData:fd encoding:NSUTF8StringEncoding] intValue];;
             _host = (__bridge NSString *)CFReadStreamCopyProperty(stream,kCFStreamPropertySocketRemoteHostName);
             NSString *port = (__bridge NSString *)CFReadStreamCopyProperty(stream,kCFStreamPropertySocketRemotePortNumber);
             _url = [NSString stringWithFormat:@"%@:%@",_host,port];
@@ -107,8 +107,9 @@
                 NSString *peerIdStr = [[NSString alloc] initWithData:peerIdData encoding:NSUTF8StringEncoding];
                 _fd = peerIdStr.intValue;
             }
-            char *domainPtr = NULL;
             size_t domainLen;
+            SSLGetPeerDomainNameLength(stream,&domainLen);
+            char domainPtr[domainLen];
             OSStatus getDomain = SSLGetPeerDomainName(stream, domainPtr, &domainLen);
             if (getDomain == 0) {
                 NSString *domainStr = [[NSString alloc] initWithUTF8String:domainPtr];
@@ -130,7 +131,7 @@
 
 - (NSString *)description
 {
-    return [NSString stringWithFormat:@"[NAME]:%@ - [TYPE]:%lu - [URL]:%@ - [CONTENT]:%@",_trackerName,(unsigned long)_type,_url,_content];
+    return [NSString stringWithFormat:@"[NAME]:%@ - [FD]:%d - [TYPE]:%lu - [URL]:%@ - [CONTENT]:%@",_trackerName,_fd,(unsigned long)_type,_url,_content];
 }
 
 @end

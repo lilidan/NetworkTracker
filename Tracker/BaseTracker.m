@@ -49,7 +49,9 @@
 {
     NSString *className = NSStringFromClass(self);
     event.trackerName = className;
-    NSLog(@"%@",event);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSLog(@"%@",event);
+    });
 }
 
 @end

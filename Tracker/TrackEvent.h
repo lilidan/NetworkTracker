@@ -18,6 +18,8 @@ typedef NS_ENUM(NSUInteger, TrackerEventType) {
     TrackerEventTypeCFResponse,
     TrackerEventTypeCFRequestOpen,
     TrackerEventTypeCFResponseOpen,
+    TrackerEventTypeCFRequestListen,
+    TrackerEventTypeCFResponseListen,
     TrackerEventTypeSSLHandshake,
     TrackerEventTypeSSLRequest,
     TrackerEventTypeSSLResponse

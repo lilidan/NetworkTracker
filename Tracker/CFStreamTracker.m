@@ -25,9 +25,12 @@ Boolean (*origin_CFWriteStreamOpen)(CFWriteStreamRef stream);
 CFIndex (*origin_CFReadStreamRead)(CFReadStreamRef stream, UInt8 *buffer, CFIndex bufferLength);
 CFIndex (*origin_CFWriteStreamWrite)(CFWriteStreamRef stream, const UInt8 *buffer, CFIndex bufferLength);
 
+void (*origin_writeCB) (CFWriteStreamRef stream, CFStreamEventType type, void *pInfo);
+void (*origin_readCB) (CFReadStreamRef stream, CFStreamEventType type, void *pInfo);
+
 + (void)load
 {
-    int result = rcd_rebind_symbols((struct rcd_rebinding[8]){
+    int result = rcd_rebind_symbols((struct rcd_rebinding[6]){
         {
             "CFReadStreamRead",
             objc_CFReadStreamRead,
@@ -58,18 +61,17 @@ CFIndex (*origin_CFWriteStreamWrite)(CFWriteStreamRef stream, const UInt8 *buffe
             objc_CFWriteStreamSetClient,
             (void *)&origin_CFWriteStreamSetClient
         },
-        {
-            "CFURLConnectionCreate",
-            objc_CFURLConnectionCreate,
-            (void *)&origin_CFURLConnectionCreate
-        },
-        {
-            "CFURLConnectionStart",
-            objc_CFURLConnectionStart,
-            (void *)&origin_CFURLConnectionStart
-        }
-    }, 8);
-    NSLog(@"%d",result);
+//        {
+//            "CFURLConnectionCreate",
+//            objc_CFURLConnectionCreate,
+//            (void *)&origin_CFURLConnectionCreate
+//        },
+//        {
+//            "CFURLConnectionStart",
+//            objc_CFURLConnectionStart,
+//            (void *)&origin_CFURLConnectionStart
+//        }
+    }, 6);
 }
 
 void* objc_CFURLConnectionCreate(CFAllocatorRef allocator, void *request, const void *ctx)
@@ -85,16 +87,35 @@ void objc_CFURLConnectionStart(void *connection)
 
 Boolean objc_CFWriteStreamSetClient(CFWriteStreamRef stream, CFOptionFlags streamEvents, CFWriteStreamClientCallBack clientCB, CFStreamClientContext *clientContext)
 {
+    origin_writeCB = clientCB;
     Boolean result = origin_CFWriteStreamSetClient(stream,streamEvents,clientCB,clientContext);
-    [CFStreamTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeCFRequestOpen stream:stream]];
+    [CFStreamTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeCFRequestListen stream:stream]];
     return result;
 }
 
 Boolean objc_CFReadStreamSetClient(CFReadStreamRef stream, CFOptionFlags streamEvents, CFReadStreamClientCallBack clientCB, CFStreamClientContext *clientContext)
 {
+    origin_readCB = clientCB;
     Boolean result = origin_CFReadStreamSetClient(stream,streamEvents,clientCB,clientContext);
-    [CFStreamTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeCFResponseOpen stream:stream]];
+    [CFStreamTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeCFResponseListen stream:stream]];
     return result;
+}
+
+static void CFWriteStreamCallback (CFWriteStreamRef stream, CFStreamEventType type, void *pInfo)
+{
+    if (origin_writeCB != NULL) {
+        origin_writeCB(stream,type,pInfo);
+    }else{
+        NSLog(@"");
+    }
+}
+static void CFReadStreamCallback (CFReadStreamRef stream, CFStreamEventType type, void *pInfo)
+{
+    if (origin_readCB != NULL) {
+        origin_readCB(stream,type,pInfo);
+    }else{
+        NSLog(@"");
+    }
 }
 
 static Boolean objc_CFWriteStreamOpen(CFWriteStreamRef stream)

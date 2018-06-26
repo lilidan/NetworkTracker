@@ -39,7 +39,6 @@ OSStatus objc_SSLHandshake(SSLContextRef context)
 {
     OSStatus result = origin_SSLHandshake(context);
     [SSLTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeSSLHandshake stream:context]];
-
     return result;
 }
 
