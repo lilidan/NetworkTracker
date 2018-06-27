@@ -7,14 +7,171 @@
 //
 
 #import "DataKeeper.h"
+#import "SRIOConsumer.h"
+#import "SRIOConsumerPool.h"
+#include <zlib.h>
+
+typedef struct {
+    BOOL fin;
+    uint8_t opcode;
+    BOOL masked;
+    uint64_t payload_length;
+} frame_header;
 
 @interface DataKeeper()
 
 @property (nonatomic,strong) NSMutableDictionary *keeper;
+@property (nullable, nonatomic, assign) CFHTTPMessageRef receivedHTTPHeaders;
 
 @end
 
-@implementation DataKeeper
+
+size_t SRDefaultBufferSize(void) {
+    static size_t size;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        size = getpagesize();
+    });
+    return size;
+}
+
+@implementation DataKeeper{
+    
+    dispatch_queue_t _workQueue;
+    NSMutableArray<SRIOConsumer *> *_consumers;
+    
+    dispatch_data_t _readBuffer;
+    NSUInteger _readBufferOffset;
+    
+    dispatch_data_t _outputBuffer;
+    NSUInteger _outputBufferOffset;
+    
+    uint8_t _currentFrameOpcode;
+    size_t _currentFrameCount;
+    size_t _readOpCount;
+    uint32_t _currentStringScanPosition;
+    NSMutableData *_currentFrameData;
+    
+    NSString *_closeReason;
+    
+    NSString *_secKey;
+
+    
+    uint8_t _currentReadMaskKey[4];
+    size_t _currentReadMaskOffset;
+    
+    BOOL _closeWhenFinishedWriting;
+    BOOL _failed;
+    
+    NSURLRequest *_urlRequest;
+    
+    BOOL _sentClose;
+    BOOL _didFail;
+    BOOL _cleanupScheduled;
+    int _closeCode;
+    BOOL _isPumping;
+
+    NSMutableSet<NSArray *> *_scheduledRunloops; // Set<[RunLoop, Mode]>. TODO: (nlutsenko) Fix clowntown
+
+    NSArray<NSString *> *_requestedProtocols;
+    SRIOConsumerPool *_consumerPool;
+    
+    NSMutableArray<NSData *> *_inputQueue;
+}
+
++ (instancetype)shareInstance
+{
+    static dispatch_once_t once;
+    static DataKeeper* sharedInstance;
+    dispatch_once(&once, ^{
+        sharedInstance = [[DataKeeper alloc] init];
+    });
+    return sharedInstance;
+}
+
+-(NSData *)uncompressZippedData:(NSData *)compressedData
+{
+    if ([compressedData length] == 0) return compressedData;
+    
+    unsigned full_length = [compressedData length];
+    
+    unsigned half_length = [compressedData length] / 2;
+    NSMutableData *decompressed = [NSMutableData dataWithLength: full_length + half_length];
+    BOOL done = NO;
+    int status;
+    z_stream strm;
+    strm.next_in = (Bytef *)[compressedData bytes];
+    strm.avail_in = [compressedData length];
+    strm.total_out = 0;
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    if (inflateInit2(&strm, (15+32)) != Z_OK) return nil;
+    while (!done) {
+        // Make sure we have enough room and reset the lengths.
+        if (strm.total_out >= [decompressed length]) {
+            [decompressed increaseLengthBy: half_length];
+        }
+        // chadeltu 加了(Bytef *)
+        strm.next_out = (Bytef *)[decompressed mutableBytes] + strm.total_out;
+        strm.avail_out = [decompressed length] - strm.total_out;
+        // Inflate another chunk.
+        status = inflate (&strm, Z_SYNC_FLUSH);
+        if (status == Z_STREAM_END) {
+            done = YES;
+        } else if (status != Z_OK) {
+            break;
+        }
+        
+    }
+    if (inflateEnd (&strm) != Z_OK) return nil;
+    // Set real length.
+    if (done) {
+        [decompressed setLength: strm.total_out];
+        return [NSData dataWithData: decompressed];
+    } else {
+        return nil;
+    }
+}
+
+
+- (instancetype)init
+{
+    if (self = [super init]) {
+        _workQueue = dispatch_queue_create("com.DataKeeperQueue", DISPATCH_QUEUE_SERIAL);
+        
+//        // Going to set a specific on the queue so we can validate we're on the work queue
+//        dispatch_queue_set_specific(_workQueue, (__bridge void *)self, (__bridge void *)(_workQueue), NULL);
+//
+        _readBuffer = dispatch_data_empty;
+        _outputBuffer = dispatch_data_empty;
+        
+        _currentFrameData = [[NSMutableData alloc] init];
+        
+        _consumers = [[NSMutableArray alloc] init];
+        
+        _consumerPool = [[SRIOConsumerPool alloc] init];
+        
+        _scheduledRunloops = [[NSMutableSet alloc] init];
+        
+        data_callback dataHandler = ^(NSData *data){
+            NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSLog(@"----------------%@----------------%d",str,data.length);
+            });
+            
+            
+            
+        };
+        
+        dispatch_async(_workQueue, ^{
+           [self _readUntilBytes:CRLFCRLFBytes length:sizeof(CRLFCRLFBytes) callback:dataHandler];
+        });
+
+    }
+    return self;
+}
+
 
 - (NSString *)getDataForUrl:(NSString *)url
 {
@@ -25,360 +182,143 @@
 - (void)appendData:(const void *)buffer length:(size_t)length ForUrl:(NSString *)url
 {
     
+    if (length <= 0) {
+        return;
+    }
+    
+    dispatch_async(_workQueue, ^{
+        //    if ([url isEqualToString:@"www.baidu.com"]) {
+        dispatch_data_t data = dispatch_data_create(buffer, length, nil, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+        self->_readBuffer = dispatch_data_create_concat(_readBuffer, data);
+        [self _pumpScanner];
+        //    }
+        
+    });
+    
+
+ 
+}
+
+static const char CRLFCRLFBytes[] = {'\r', '\n', '\r', '\n'};
+
+- (void)_readUntilHeaderCompleteWithCallback:(data_callback)dataHandler;
+{
+    [self _readUntilBytes:CRLFCRLFBytes length:sizeof(CRLFCRLFBytes) callback:dataHandler];
+}
+
+- (void)_readUntilBytes:(const void *)bytes length:(size_t)length callback:(data_callback)dataHandler;
+{
+    // TODO optimize so this can continue from where we last searched
+    stream_scanner consumer = ^size_t(NSData *data) {
+        __block size_t found_size = 0;
+        __block size_t match_count = 0;
+        
+        size_t size = data.length;
+        const unsigned char *buffer = data.bytes;
+        for (size_t i = 0; i < size; i++ ) {
+            if (((const unsigned char *)buffer)[i] == ((const unsigned char *)bytes)[match_count]) {
+                match_count += 1;
+                if (match_count == length) {
+                    found_size = i + 1;
+                    break;
+                }
+            } else {
+                match_count = 0;
+            }
+        }
+        return found_size;
+    };
+    [self _addConsumerWithScanner:consumer callback:dataHandler];
+}
+
+- (void)_addConsumerWithScanner:(stream_scanner)consumer callback:(data_callback)callback;
+{
+    [self _addConsumerWithScanner:consumer callback:callback dataLength:0];
+}
+
+- (void)_addConsumerWithScanner:(stream_scanner)consumer callback:(data_callback)callback dataLength:(size_t)dataLength;
+{
+    [_consumers addObject:[_consumerPool consumerWithScanner:consumer handler:callback bytesNeeded:dataLength readToCurrentFrame:NO unmaskBytes:NO]];
+    [self _pumpScanner];
+}
+
+-(void)_pumpScanner;
+{
+    if (!_isPumping) {
+        _isPumping = YES;
+    } else {
+        return;
+    }
+    
+    while ([self _innerPumpScanner]) {
+        
+    }
+    _isPumping = NO;
 }
 
 
 
+// Returns true if did work
+- (BOOL)_innerPumpScanner {
+    
+    BOOL didWork = NO;
+    
 
-- (void)doReadData
-{
-    // This method is called on the socketQueue.
+    size_t readBufferSize = dispatch_data_get_size(_readBuffer);
     
-    BOOL hasBytesAvailable = NO;
-    unsigned long estimatedBytesAvailable = 0;
-
-    estimatedBytesAvailable = socketFDBytesAvailable;
-    hasBytesAvailable = (estimatedBytesAvailable > 0);
-    
-        
-
-    BOOL done        = NO;  // Completed read operation
-    NSError *error   = nil; // Error occurred
-    
-    NSUInteger totalBytesReadForCurrentRead = 0;
-
-    
-    BOOL socketEOF = (flags & kSocketHasReadEOF) ? YES : NO;  // Nothing more to read via socket (end of file)
-    BOOL waiting   = !done && !error && !socketEOF && !hasBytesAvailable; // Ran out of data, waiting for more
-    
-    if (!done && !error && !socketEOF && hasBytesAvailable)
-    {
-        NSAssert(([preBuffer availableBytes] == 0), @"Invalid logic");
-        
-        BOOL readIntoPreBuffer = NO;
-        uint8_t *buffer = NULL;
-        size_t bytesRead = 0;
-                    
-            NSUInteger bytesToRead;
-            
-            // There are 3 types of read packets:
-            //
-            // 1) Read all available data.
-            // 2) Read a specific length of data.
-            // 3) Read up to a particular terminator.
-            
-            if (currentRead->term != nil)
-            {
-                // Read type #3 - read up to a terminator
-                
-                bytesToRead = [currentRead readLengthForTermWithHint:estimatedBytesAvailable
-                                                     shouldPreBuffer:&readIntoPreBuffer];
-            }
-            else
-            {
-                // Read type #1 or #2
-                
-                bytesToRead = [currentRead readLengthForNonTermWithHint:estimatedBytesAvailable];
-            }
-            
-            if (bytesToRead > SIZE_MAX) { // NSUInteger may be bigger than size_t (read param 3)
-                bytesToRead = SIZE_MAX;
-            }
-            
-            // Make sure we have enough room in the buffer for our read.
-            //
-            // We are either reading directly into the currentRead->buffer,
-            // or we're reading into the temporary preBuffer.
-            
-            if (readIntoPreBuffer)
-            {
-                [preBuffer ensureCapacityForWrite:bytesToRead];
-                
-                buffer = [preBuffer writeBuffer];
-            }
-            else
-            {
-                [currentRead ensureCapacityForAdditionalDataOfLength:bytesToRead];
-                
-                buffer = (uint8_t *)[currentRead->buffer mutableBytes]
-                + currentRead->startOffset
-                + currentRead->bytesDone;
-            }
-            
-            // Read data into buffer
-            
-            int socketFD = (socket4FD != SOCKET_NULL) ? socket4FD : (socket6FD != SOCKET_NULL) ? socket6FD : socketUN;
-            
-            ssize_t result = read(socketFD, buffer, (size_t)bytesToRead);
-            LogVerbose(@"read from socket = %i", (int)result);
-            
-            if (result < 0)
-            {
-                if (errno == EWOULDBLOCK)
-                    waiting = YES;
-                else
-                    error = [self errnoErrorWithReason:@"Error in read() function"];
-                
-                socketFDBytesAvailable = 0;
-            }
-            else if (result == 0)
-            {
-                socketEOF = YES;
-                socketFDBytesAvailable = 0;
-            }
-            else
-            {
-                bytesRead = result;
-                
-                if (bytesRead < bytesToRead)
-                {
-                    // The read returned less data than requested.
-                    // This means socketFDBytesAvailable was a bit off due to timing,
-                    // because we read from the socket right when the readSource event was firing.
-                    socketFDBytesAvailable = 0;
-                }
-                else
-                {
-                    if (socketFDBytesAvailable <= bytesRead)
-                        socketFDBytesAvailable = 0;
-                    else
-                        socketFDBytesAvailable -= bytesRead;
-                }
-                
-                if (socketFDBytesAvailable == 0)
-                {
-                    waiting = YES;
-                }
-            }
-        }
-        
-        if (bytesRead > 0)
-        {
-            // Check to see if the read operation is done
-            
-            if (currentRead->readLength > 0)
-            {
-                // Read type #2 - read a specific length of data
-                //
-                // Note: We should never be using a prebuffer when we're reading a specific length of data.
-                
-                NSAssert(readIntoPreBuffer == NO, @"Invalid logic");
-                
-                currentRead->bytesDone += bytesRead;
-                totalBytesReadForCurrentRead += bytesRead;
-                
-                done = (currentRead->bytesDone == currentRead->readLength);
-            }
-            else if (currentRead->term != nil)
-            {
-                // Read type #3 - read up to a terminator
-                
-                if (readIntoPreBuffer)
-                {
-                    // We just read a big chunk of data into the preBuffer
-                    
-                    [preBuffer didWrite:bytesRead];
-                    LogVerbose(@"read data into preBuffer - preBuffer.length = %zu", [preBuffer availableBytes]);
-                    
-                    // Search for the terminating sequence
-                    
-                    NSUInteger bytesToCopy = [currentRead readLengthForTermWithPreBuffer:preBuffer found:&done];
-                    LogVerbose(@"copying %lu bytes from preBuffer", (unsigned long)bytesToCopy);
-                    
-                    // Ensure there's room on the read packet's buffer
-                    
-                    [currentRead ensureCapacityForAdditionalDataOfLength:bytesToCopy];
-                    
-                    // Copy bytes from prebuffer into read buffer
-                    
-                    uint8_t *readBuf = (uint8_t *)[currentRead->buffer mutableBytes] + currentRead->startOffset
-                    + currentRead->bytesDone;
-                    
-                    memcpy(readBuf, [preBuffer readBuffer], bytesToCopy);
-                    
-                    // Remove the copied bytes from the prebuffer
-                    [preBuffer didRead:bytesToCopy];
-                    LogVerbose(@"preBuffer.length = %zu", [preBuffer availableBytes]);
-                    
-                    // Update totals
-                    currentRead->bytesDone += bytesToCopy;
-                    totalBytesReadForCurrentRead += bytesToCopy;
-                    
-                    // Our 'done' variable was updated via the readLengthForTermWithPreBuffer:found: method above
-                }
-                else
-                {
-                    // We just read a big chunk of data directly into the packet's buffer.
-                    // We need to move any overflow into the prebuffer.
-                    
-                    NSInteger overflow = [currentRead searchForTermAfterPreBuffering:bytesRead];
-                    
-                    if (overflow == 0)
-                    {
-                        // Perfect match!
-                        // Every byte we read stays in the read buffer,
-                        // and the last byte we read was the last byte of the term.
-                        
-                        currentRead->bytesDone += bytesRead;
-                        totalBytesReadForCurrentRead += bytesRead;
-                        done = YES;
-                    }
-                    else if (overflow > 0)
-                    {
-                        // The term was found within the data that we read,
-                        // and there are extra bytes that extend past the end of the term.
-                        // We need to move these excess bytes out of the read packet and into the prebuffer.
-                        
-                        NSInteger underflow = bytesRead - overflow;
-                        
-                        // Copy excess data into preBuffer
-                        
-                        LogVerbose(@"copying %ld overflow bytes into preBuffer", (long)overflow);
-                        [preBuffer ensureCapacityForWrite:overflow];
-                        
-                        uint8_t *overflowBuffer = buffer + underflow;
-                        memcpy([preBuffer writeBuffer], overflowBuffer, overflow);
-                        
-                        [preBuffer didWrite:overflow];
-                        LogVerbose(@"preBuffer.length = %zu", [preBuffer availableBytes]);
-                        
-                        // Note: The completeCurrentRead method will trim the buffer for us.
-                        
-                        currentRead->bytesDone += underflow;
-                        totalBytesReadForCurrentRead += underflow;
-                        done = YES;
-                    }
-                    else
-                    {
-                        // The term was not found within the data that we read.
-                        
-                        currentRead->bytesDone += bytesRead;
-                        totalBytesReadForCurrentRead += bytesRead;
-                        done = NO;
-                    }
-                }
-                
-                if (!done && currentRead->maxLength > 0)
-                {
-                    // We're not done and there's a set maxLength.
-                    // Have we reached that maxLength yet?
-                    
-                    if (currentRead->bytesDone >= currentRead->maxLength)
-                    {
-                        error = [self readMaxedOutError];
-                    }
-                }
-            }
-            else
-            {
-                // Read type #1 - read all available data
-                
-                if (readIntoPreBuffer)
-                {
-                    // We just read a chunk of data into the preBuffer
-                    
-                    [preBuffer didWrite:bytesRead];
-                    
-                    // Now copy the data into the read packet.
-                    //
-                    // Recall that we didn't read directly into the packet's buffer to avoid
-                    // over-allocating memory since we had no clue how much data was available to be read.
-                    //
-                    // Ensure there's room on the read packet's buffer
-                    
-                    [currentRead ensureCapacityForAdditionalDataOfLength:bytesRead];
-                    
-                    // Copy bytes from prebuffer into read buffer
-                    
-                    uint8_t *readBuf = (uint8_t *)[currentRead->buffer mutableBytes] + currentRead->startOffset
-                    + currentRead->bytesDone;
-                    
-                    memcpy(readBuf, [preBuffer readBuffer], bytesRead);
-                    
-                    // Remove the copied bytes from the prebuffer
-                    [preBuffer didRead:bytesRead];
-                    
-                    // Update totals
-                    currentRead->bytesDone += bytesRead;
-                    totalBytesReadForCurrentRead += bytesRead;
-                }
-                else
-                {
-                    currentRead->bytesDone += bytesRead;
-                    totalBytesReadForCurrentRead += bytesRead;
-                }
-                
-                done = YES;
-            }
-            
-        } // if (bytesRead > 0)
-        
-    } // if (!done && !error && !socketEOF && hasBytesAvailable)
-    
-    
-    if (!done && currentRead->readLength == 0 && currentRead->term == nil)
-    {
-        // Read type #1 - read all available data
-        //
-        // We might arrive here if we read data from the prebuffer but not from the socket.
-        
-        done = (totalBytesReadForCurrentRead > 0);
+    size_t curSize = readBufferSize - _readBufferOffset;
+    if (!curSize) {
+        return didWork;
     }
     
-    // Check to see if we're done, or if we've made progress
+    SRIOConsumer *consumer = [_consumers objectAtIndex:0];
     
-    if (done)
-    {
-        [self completeCurrentRead];
-        
-        if (!error && (!socketEOF || [preBuffer availableBytes] > 0))
-        {
-            [self maybeDequeueRead];
-        }
-    }
-    else if (totalBytesReadForCurrentRead > 0)
-    {
-        // We're not done read type #2 or #3 yet, but we have read in some bytes
-        //
-        // We ensure that `waiting` is set in order to resume the readSource (if it is suspended). It is
-        // possible to reach this point and `waiting` not be set, if the current read's length is
-        // sufficiently large. In that case, we may have read to some upperbound successfully, but
-        // that upperbound could be smaller than the desired length.
-        waiting = YES;
-        
-        __strong id theDelegate = delegate;
-        
-        if (delegateQueue && [theDelegate respondsToSelector:@selector(socket:didReadPartialDataOfLength:tag:)])
-        {
-            long theReadTag = currentRead->tag;
-            
-            dispatch_async(delegateQueue, ^{ @autoreleasepool {
-                
-                [theDelegate socket:self didReadPartialDataOfLength:totalBytesReadForCurrentRead tag:theReadTag];
-            }});
+    size_t bytesNeeded = consumer.bytesNeeded;
+    
+    size_t foundSize = 0;
+    if (consumer.consumer) {
+        NSData *subdata = (NSData *)dispatch_data_create_subrange(_readBuffer, _readBufferOffset, readBufferSize - _readBufferOffset);
+        foundSize = consumer.consumer(subdata);
+    } else {
+        assert(consumer.bytesNeeded);
+        if (curSize >= bytesNeeded) {
+            foundSize = bytesNeeded;
         }
     }
     
-    // Check for errors
+    if (consumer.readToCurrentFrame || foundSize) {
+        dispatch_data_t slice = dispatch_data_create_subrange(_readBuffer, _readBufferOffset, foundSize);
+        
+        _readBufferOffset += foundSize;
+        
+        if (_readBufferOffset > SRDefaultBufferSize() && _readBufferOffset > readBufferSize / 2) {
+            _readBuffer = dispatch_data_create_subrange(_readBuffer, _readBufferOffset, readBufferSize - _readBufferOffset);
+            _readBufferOffset = 0;
+        }
+        
+        if (foundSize) {
+            
+//            [_consumers removeObjectAtIndex:0];
+            consumer.handler((NSData *)slice);
+            [_consumerPool returnConsumer:consumer];
+            didWork = YES;
+        }
+    }
+    return didWork;
+}
+
+
+static inline int32_t validate_dispatch_data_partial_string(NSData *data) {
+    static const int maxCodepointSize = 3;
     
-    if (error)
-    {
-        [self closeWithError:error];
-    }
-    else if (socketEOF)
-    {
-        [self doReadEOF];
-    }
-    else if (waiting)
-    {
-        if (![self usingCFStreamForTLS])
-        {
-            // Monitor the socket for readability (if we're not already doing so)
-            [self resumeReadSource];
+    for (int i = 0; i < maxCodepointSize; i++) {
+        NSString *str = [[NSString alloc] initWithBytesNoCopy:(char *)data.bytes length:data.length - i encoding:NSUTF8StringEncoding freeWhenDone:NO];
+        if (str) {
+            return (int32_t)data.length - i;
         }
     }
     
-    // Do not add any code here without first adding return statements in the error cases above.
+    return -1;
 }
 
 @end

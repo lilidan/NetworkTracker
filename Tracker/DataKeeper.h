@@ -10,6 +10,7 @@
 
 @interface DataKeeper : NSObject
 
++ (instancetype)shareInstance;
 - (NSString *)getDataForUrl:(NSString *)url;
 - (void)appendData:(const void *)buffer length:(size_t)length ForUrl:(NSString *)url;
 

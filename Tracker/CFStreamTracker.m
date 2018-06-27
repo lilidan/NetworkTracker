@@ -78,16 +78,6 @@ CFIndex (*origin_CFWriteStreamWrite)(CFWriteStreamRef stream, const UInt8 *buffe
 }
 
 
-+ (instancetype)shareInstance
-{
-    static dispatch_once_t once;
-    static CFStreamTracker* sharedInstance;
-    dispatch_once(&once, ^{
-        sharedInstance = [[CFStreamTracker alloc] init];
-    });
-    return sharedInstance;
-}
-
 
 void* objc_CFURLConnectionCreate(CFAllocatorRef allocator, void *request, const void *ctx)
 {
@@ -102,7 +92,6 @@ void objc_CFURLConnectionStart(void *connection)
 
 Boolean objc_CFWriteStreamSetClient(CFWriteStreamRef stream, CFOptionFlags streamEvents, CFWriteStreamClientCallBack clientCB, CFStreamClientContext *clientContext)
 {
-    [CFStreamTracker shareInstance].writeCallBack = clientCB;
     Boolean result = origin_CFWriteStreamSetClient(stream,streamEvents,clientCB,clientContext);
     [CFStreamTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeCFRequestListen stream:stream]];
     return result;
@@ -110,7 +99,6 @@ Boolean objc_CFWriteStreamSetClient(CFWriteStreamRef stream, CFOptionFlags strea
 
 Boolean objc_CFReadStreamSetClient(CFReadStreamRef stream, CFOptionFlags streamEvents, CFReadStreamClientCallBack clientCB, CFStreamClientContext *clientContext)
 {
-    [CFStreamTracker shareInstance].readCallBack = clientCB;
     Boolean result = origin_CFReadStreamSetClient(stream,streamEvents,clientCB,clientContext);
     [CFStreamTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeCFResponseListen stream:stream]];
     return result;
@@ -151,14 +139,14 @@ static CFIndex objc_CFReadStreamRead(CFReadStreamRef stream, UInt8 *buffer, CFIn
 {
     
     CFIndex index = origin_CFReadStreamRead(stream,buffer,bufferLength);
-    [CFStreamTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeCFRequest buffer:buffer length:bufferLength stream:stream]];
+    [CFStreamTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeCFResponse buffer:buffer length:bufferLength stream:stream]];
     return index;
 }
 
 static CFIndex objc_CFWriteStreamWrite(CFWriteStreamRef stream, const UInt8 *buffer, CFIndex bufferLength)
 {
     CFIndex index = origin_CFWriteStreamWrite(stream,buffer,bufferLength);
-    [CFStreamTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeCFResponse buffer:buffer length:bufferLength stream:stream]];
+    [CFStreamTracker trackEvent:[[TrackEvent alloc] initWithType:TrackerEventTypeCFRequest buffer:buffer length:bufferLength stream:stream]];
     return index;
 }
 

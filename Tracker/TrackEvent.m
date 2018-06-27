@@ -9,6 +9,7 @@
 #import "TrackEvent.h"
 #import "TrackerUtils.h"
 #import <sys/socket.h>
+#import "DataKeeper.h"
 
 @interface TrackEvent()
 
@@ -122,9 +123,13 @@
 //            return self; //如果URL获取不到的话直接返回好了
         }
         
+        
         //有URL 才记录
         _data = [[NSMutableData alloc] initWithBytes:buffer length:length];
         _content = [[NSString alloc] initWithData:_data encoding:NSUTF8StringEncoding];
+        if (type == TrackerEventTypeCFResponse) {
+            [[DataKeeper shareInstance] appendData:buffer length:length ForUrl:_url];
+        }
     }
     return self;
 }
