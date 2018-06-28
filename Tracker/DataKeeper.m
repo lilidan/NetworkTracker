@@ -7,16 +7,13 @@
 //
 
 #import "DataKeeper.h"
-#import "SRIOConsumer.h"
-#import "SRIOConsumerPool.h"
-#include <zlib.h>
 
-typedef struct {
-    BOOL fin;
-    uint8_t opcode;
-    BOOL masked;
-    uint64_t payload_length;
-} frame_header;
+//typedef struct {
+//    BOOL fin;
+//    uint8_t opcode;
+//    BOOL masked;
+//    uint64_t payload_length;
+//} frame_header;
 
 @interface DataKeeper()
 
@@ -25,20 +22,20 @@ typedef struct {
 
 @end
 
-
-size_t SRDefaultBufferSize(void) {
-    static size_t size;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        size = getpagesize();
-    });
-    return size;
-}
+//
+//size_t SRDefaultBufferSize(void) {
+//    static size_t size;
+//    static dispatch_once_t onceToken;
+//    dispatch_once(&onceToken, ^{
+//        size = getpagesize();
+//    });
+//    return size;
+//}
 
 @implementation DataKeeper{
     
     dispatch_queue_t _workQueue;
-    NSMutableArray<SRIOConsumer *> *_consumers;
+//    NSMutableArray<SRIOConsumer *> *_consumers;
     
     dispatch_data_t _readBuffer;
     NSUInteger _readBufferOffset;
@@ -74,7 +71,7 @@ size_t SRDefaultBufferSize(void) {
     NSMutableSet<NSArray *> *_scheduledRunloops; // Set<[RunLoop, Mode]>. TODO: (nlutsenko) Fix clowntown
 
     NSArray<NSString *> *_requestedProtocols;
-    SRIOConsumerPool *_consumerPool;
+//    SRIOConsumerPool *_consumerPool;
     
     NSMutableArray<NSData *> *_inputQueue;
 }
@@ -89,51 +86,6 @@ size_t SRDefaultBufferSize(void) {
     return sharedInstance;
 }
 
--(NSData *)uncompressZippedData:(NSData *)compressedData
-{
-    if ([compressedData length] == 0) return compressedData;
-    
-    unsigned full_length = [compressedData length];
-    
-    unsigned half_length = [compressedData length] / 2;
-    NSMutableData *decompressed = [NSMutableData dataWithLength: full_length + half_length];
-    BOOL done = NO;
-    int status;
-    z_stream strm;
-    strm.next_in = (Bytef *)[compressedData bytes];
-    strm.avail_in = [compressedData length];
-    strm.total_out = 0;
-    strm.zalloc = Z_NULL;
-    strm.zfree = Z_NULL;
-    if (inflateInit2(&strm, (15+32)) != Z_OK) return nil;
-    while (!done) {
-        // Make sure we have enough room and reset the lengths.
-        if (strm.total_out >= [decompressed length]) {
-            [decompressed increaseLengthBy: half_length];
-        }
-        // chadeltu 加了(Bytef *)
-        strm.next_out = (Bytef *)[decompressed mutableBytes] + strm.total_out;
-        strm.avail_out = [decompressed length] - strm.total_out;
-        // Inflate another chunk.
-        status = inflate (&strm, Z_SYNC_FLUSH);
-        if (status == Z_STREAM_END) {
-            done = YES;
-        } else if (status != Z_OK) {
-            break;
-        }
-        
-    }
-    if (inflateEnd (&strm) != Z_OK) return nil;
-    // Set real length.
-    if (done) {
-        [decompressed setLength: strm.total_out];
-        return [NSData dataWithData: decompressed];
-    } else {
-        return nil;
-    }
-}
-
-
 - (instancetype)init
 {
     if (self = [super init]) {
@@ -146,27 +98,25 @@ size_t SRDefaultBufferSize(void) {
         _outputBuffer = dispatch_data_empty;
         
         _currentFrameData = [[NSMutableData alloc] init];
-        
-        _consumers = [[NSMutableArray alloc] init];
-        
-        _consumerPool = [[SRIOConsumerPool alloc] init];
+//
+//        _consumers = [[NSMutableArray alloc] init];
+//
+//        _consumerPool = [[SRIOConsumerPool alloc] init];
         
         _scheduledRunloops = [[NSMutableSet alloc] init];
-        
-        data_callback dataHandler = ^(NSData *data){
-            NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            
-            dispatch_async(dispatch_get_main_queue(), ^{
-                NSLog(@"----------------%@----------------%d",str,data.length);
-            });
-            
-            
-            
-        };
-        
-        dispatch_async(_workQueue, ^{
-           [self _readUntilBytes:CRLFCRLFBytes length:sizeof(CRLFCRLFBytes) callback:dataHandler];
-        });
+//
+//        data_callback dataHandler = ^(NSData *data){
+//            NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+//
+//            dispatch_async(dispatch_get_main_queue(), ^{
+//                NSLog(@"----------------%@----------------%d",str,data.length);
+//            });
+//
+//        };
+//
+//        dispatch_async(_workQueue, ^{
+//           [self _readUntilBytes:CRLFCRLFBytes length:sizeof(CRLFCRLFBytes) callback:dataHandler];
+//        });
 
     }
     return self;
@@ -186,139 +136,152 @@ size_t SRDefaultBufferSize(void) {
         return;
     }
     
-    dispatch_async(_workQueue, ^{
-        //    if ([url isEqualToString:@"www.baidu.com"]) {
+//    dispatch_async(_workQueue, ^{
+//    if ([url isEqualToString:@"www.sina.com.cn:80"]) {
         dispatch_data_t data = dispatch_data_create(buffer, length, nil, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
         self->_readBuffer = dispatch_data_create_concat(_readBuffer, data);
-        [self _pumpScanner];
-        //    }
         
-    });
+        NSString *str = [[NSString alloc] initWithData:_readBuffer encoding:NSUTF8StringEncoding];
+        NSLog(@"");
+//        if (str.length > 100) {
+//            NSLog(@"-----------------------------------------------------------------------------------%@---------",str);
+//        }else{
+//            NSLog(@"========================================================================================%@==---------",str);
+//        }
+    
+//        [self _pumpScanner];
+//        }
+    
+//    });
     
 
  
 }
 
-static const char CRLFCRLFBytes[] = {'\r', '\n', '\r', '\n'};
+//static const char CRLFCRLFBytes[] = {'\r', '\n', '\r', '\n'};
+//
+//- (void)_readUntilHeaderCompleteWithCallback:(data_callback)dataHandler;
+//{
+//    [self _readUntilBytes:CRLFCRLFBytes length:sizeof(CRLFCRLFBytes) callback:dataHandler];
+//}
+//
+//- (void)_readUntilBytes:(const void *)bytes length:(size_t)length callback:(data_callback)dataHandler;
+//{
+//    // TODO optimize so this can continue from where we last searched
+//    stream_scanner consumer = ^size_t(NSData *data) {
+//        __block size_t found_size = 0;
+//        __block size_t match_count = 0;
+//
+//        size_t size = data.length;
+//        const unsigned char *buffer = data.bytes;
+//        for (size_t i = 0; i < size; i++ ) {
+//            if (((const unsigned char *)buffer)[i] == ((const unsigned char *)bytes)[match_count]) {
+//                match_count += 1;
+//                if (match_count == length) {
+//                    found_size = i + 1;
+//                    break;
+//                }
+//            } else {
+//                match_count = 0;
+//            }
+//        }
+//        return found_size;
+//    };
+//    [self _addConsumerWithScanner:consumer callback:dataHandler];
+//}
+//
+//- (void)_addConsumerWithScanner:(stream_scanner)consumer callback:(data_callback)callback;
+//{
+//    [self _addConsumerWithScanner:consumer callback:callback dataLength:0];
+//}
+//
+//- (void)_addConsumerWithScanner:(stream_scanner)consumer callback:(data_callback)callback dataLength:(size_t)dataLength;
+//{
+//    [_consumers addObject:[_consumerPool consumerWithScanner:consumer handler:callback bytesNeeded:dataLength readToCurrentFrame:NO unmaskBytes:NO]];
+//    [self _pumpScanner];
+//}
+//
+//-(void)_pumpScanner;
+//{
+//    if (!_isPumping) {
+//        _isPumping = YES;
+//    } else {
+//        return;
+//    }
+//
+//    while ([self _innerPumpScanner]) {
+//
+//    }
+//    _isPumping = NO;
+//}
+//
+//
+//
+//// Returns true if did work
+//- (BOOL)_innerPumpScanner {
+//
+//    BOOL didWork = NO;
+//
+//
+//    if (!_consumers.count) {
+//        return didWork;
+//    }
+//
+//    size_t readBufferSize = dispatch_data_get_size(_readBuffer);
+//
+//    size_t curSize = readBufferSize - _readBufferOffset;
+//    if (!curSize) {
+//        return didWork;
+//    }
+//
+//    SRIOConsumer *consumer = [_consumers objectAtIndex:0];
+//
+//    size_t bytesNeeded = consumer.bytesNeeded;
+//
+//    size_t foundSize = 0;
+//    if (consumer.consumer) {
+//        NSData *subdata = (NSData *)dispatch_data_create_subrange(_readBuffer, _readBufferOffset, readBufferSize - _readBufferOffset);
+//        foundSize = consumer.consumer(subdata);
+//    } else {
+//        assert(consumer.bytesNeeded);
+//        if (curSize >= bytesNeeded) {
+//            foundSize = bytesNeeded;
+//        }
+//    }
+//
+//    if (consumer.readToCurrentFrame || foundSize) {
+//        dispatch_data_t slice = dispatch_data_create_subrange(_readBuffer, _readBufferOffset, foundSize);
+//
+//        _readBufferOffset += foundSize;
+//
+//        if (_readBufferOffset > SRDefaultBufferSize() && _readBufferOffset > readBufferSize / 2) {
+//            _readBuffer = dispatch_data_create_subrange(_readBuffer, _readBufferOffset, readBufferSize - _readBufferOffset);
+//            _readBufferOffset = 0;
+//        }
+//
+//        if (foundSize) {
+//
+////            [_consumers removeObjectAtIndex:0];
+//            consumer.handler((NSData *)slice);
+//            [_consumerPool returnConsumer:consumer];
+//            didWork = YES;
+//        }
+//    }
+//    return didWork;
+//}
 
-- (void)_readUntilHeaderCompleteWithCallback:(data_callback)dataHandler;
-{
-    [self _readUntilBytes:CRLFCRLFBytes length:sizeof(CRLFCRLFBytes) callback:dataHandler];
-}
 
-- (void)_readUntilBytes:(const void *)bytes length:(size_t)length callback:(data_callback)dataHandler;
-{
-    // TODO optimize so this can continue from where we last searched
-    stream_scanner consumer = ^size_t(NSData *data) {
-        __block size_t found_size = 0;
-        __block size_t match_count = 0;
-        
-        size_t size = data.length;
-        const unsigned char *buffer = data.bytes;
-        for (size_t i = 0; i < size; i++ ) {
-            if (((const unsigned char *)buffer)[i] == ((const unsigned char *)bytes)[match_count]) {
-                match_count += 1;
-                if (match_count == length) {
-                    found_size = i + 1;
-                    break;
-                }
-            } else {
-                match_count = 0;
-            }
-        }
-        return found_size;
-    };
-    [self _addConsumerWithScanner:consumer callback:dataHandler];
-}
-
-- (void)_addConsumerWithScanner:(stream_scanner)consumer callback:(data_callback)callback;
-{
-    [self _addConsumerWithScanner:consumer callback:callback dataLength:0];
-}
-
-- (void)_addConsumerWithScanner:(stream_scanner)consumer callback:(data_callback)callback dataLength:(size_t)dataLength;
-{
-    [_consumers addObject:[_consumerPool consumerWithScanner:consumer handler:callback bytesNeeded:dataLength readToCurrentFrame:NO unmaskBytes:NO]];
-    [self _pumpScanner];
-}
-
--(void)_pumpScanner;
-{
-    if (!_isPumping) {
-        _isPumping = YES;
-    } else {
-        return;
-    }
-    
-    while ([self _innerPumpScanner]) {
-        
-    }
-    _isPumping = NO;
-}
-
-
-
-// Returns true if did work
-- (BOOL)_innerPumpScanner {
-    
-    BOOL didWork = NO;
-    
-
-    size_t readBufferSize = dispatch_data_get_size(_readBuffer);
-    
-    size_t curSize = readBufferSize - _readBufferOffset;
-    if (!curSize) {
-        return didWork;
-    }
-    
-    SRIOConsumer *consumer = [_consumers objectAtIndex:0];
-    
-    size_t bytesNeeded = consumer.bytesNeeded;
-    
-    size_t foundSize = 0;
-    if (consumer.consumer) {
-        NSData *subdata = (NSData *)dispatch_data_create_subrange(_readBuffer, _readBufferOffset, readBufferSize - _readBufferOffset);
-        foundSize = consumer.consumer(subdata);
-    } else {
-        assert(consumer.bytesNeeded);
-        if (curSize >= bytesNeeded) {
-            foundSize = bytesNeeded;
-        }
-    }
-    
-    if (consumer.readToCurrentFrame || foundSize) {
-        dispatch_data_t slice = dispatch_data_create_subrange(_readBuffer, _readBufferOffset, foundSize);
-        
-        _readBufferOffset += foundSize;
-        
-        if (_readBufferOffset > SRDefaultBufferSize() && _readBufferOffset > readBufferSize / 2) {
-            _readBuffer = dispatch_data_create_subrange(_readBuffer, _readBufferOffset, readBufferSize - _readBufferOffset);
-            _readBufferOffset = 0;
-        }
-        
-        if (foundSize) {
-            
-//            [_consumers removeObjectAtIndex:0];
-            consumer.handler((NSData *)slice);
-            [_consumerPool returnConsumer:consumer];
-            didWork = YES;
-        }
-    }
-    return didWork;
-}
-
-
-static inline int32_t validate_dispatch_data_partial_string(NSData *data) {
-    static const int maxCodepointSize = 3;
-    
-    for (int i = 0; i < maxCodepointSize; i++) {
-        NSString *str = [[NSString alloc] initWithBytesNoCopy:(char *)data.bytes length:data.length - i encoding:NSUTF8StringEncoding freeWhenDone:NO];
-        if (str) {
-            return (int32_t)data.length - i;
-        }
-    }
-    
-    return -1;
-}
+//static inline int32_t validate_dispatch_data_partial_string(NSData *data) {
+//    static const int maxCodepointSize = 3;
+//
+//    for (int i = 0; i < maxCodepointSize; i++) {
+//        NSString *str = [[NSString alloc] initWithBytesNoCopy:(char *)data.bytes length:data.length - i encoding:NSUTF8StringEncoding freeWhenDone:NO];
+//        if (str) {
+//            return (int32_t)data.length - i;
+//        }
+//    }
+//
+//    return -1;
+//}
 
 @end
