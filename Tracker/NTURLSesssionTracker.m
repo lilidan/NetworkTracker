@@ -11,6 +11,7 @@
 #import "NTDataKeeper.h"
 
 @interface _NSURLSessionProxy : NSProxy
+
 @property (nonatomic, weak) id target;
 
 - (instancetype)initWithTarget:(id)target;
@@ -51,8 +52,8 @@
     }
     if (@available(iOS 10.0, *)) {
         if ([NSStringFromSelector(invocation.selector) isEqualToString:@"URLSession:task:didFinishCollectingMetrics:"]) {
-            NSURLSessionTaskMetrics *metrics;
-            [invocation getArgument:&metrics atIndex:3];
+            __unsafe_unretained NSURLSessionTaskMetrics *metrics;
+            [invocation getArgument:&metrics atIndex:4];
             [[NTDataKeeper shareInstance] trackSessionMetrics:metrics];
         }
     }
@@ -71,32 +72,22 @@
         SEL originalSelector = @selector(sessionWithConfiguration:delegate:delegateQueue:);
         SEL swizzledSelector = @selector(swizzledSessionWithConfiguration:delegate:delegateQueue:);
         
-         Method originalMethod = class_getClassMethod(class, originalSelector);
-         Method swizzledMethod = class_getClassMethod(class, swizzledSelector);
-
-        BOOL didAddMethod =
-        class_addMethod(class,
-                        originalSelector,
-                        method_getImplementation(swizzledMethod),
-                        method_getTypeEncoding(swizzledMethod));
-        
-        if (didAddMethod) {
-            class_replaceMethod(class,
-                                swizzledSelector,
-                                method_getImplementation(originalMethod),
-                                method_getTypeEncoding(originalMethod));
-        } else {
-            method_exchangeImplementations(originalMethod, swizzledMethod);
-        }
+        Method originalMethod = class_getClassMethod(class, originalSelector);
+        Method swizzledMethod = class_getClassMethod(class, swizzledSelector);
+        method_exchangeImplementations(originalMethod, swizzledMethod);
     });
-    
 }
 
 + (NSURLSession *)swizzledSessionWithConfiguration:(NSURLSessionConfiguration *)configuration delegate:(nullable id <NSURLSessionDelegate>)delegate delegateQueue:(nullable NSOperationQueue *)queue
 {
-    _NSURLSessionProxy *proxy = [[_NSURLSessionProxy alloc] initWithTarget:delegate];
-    objc_setAssociatedObject(delegate ,@"_NSURLSessionProxy" ,proxy, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    return [self swizzledSessionWithConfiguration:configuration delegate:(id<NSURLSessionDelegate>)proxy delegateQueue:queue];
+    if (delegate) {
+        _NSURLSessionProxy *proxy = [[_NSURLSessionProxy alloc] initWithTarget:delegate];
+        objc_setAssociatedObject(delegate ,@"_NSURLSessionProxy" ,proxy, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        return [self swizzledSessionWithConfiguration:configuration delegate:(id<NSURLSessionDelegate>)proxy delegateQueue:queue];
+    }else{
+        return [self swizzledSessionWithConfiguration:configuration delegate:delegate delegateQueue:queue];
+    }
+    
 }
 
 @end

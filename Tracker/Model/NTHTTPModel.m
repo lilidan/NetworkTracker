@@ -12,20 +12,33 @@
 @implementation NTHTTPModel
 
 - (instancetype)initWithTransactionMetrics:(NSURLSessionTaskTransactionMetrics *)metrics
-API_AVAILABLE(ios(10.0)){
+{
     if (self = [super init]) {
+        [self setUpWithMetrics:metrics];
+    }
+    return self;
+}
+
+- (void)setUpWithMetrics:(NSURLSessionTaskTransactionMetrics *)metrics API_AVAILABLE(ios(10.0))
+{
+    if (@available(iOS 10.0, *)) {
         unsigned int count ,i;
-        objc_property_t *propertyArray = class_copyPropertyList([metrics class], &count);
-        
+        objc_property_t *propertyArray = class_copyPropertyList([NSURLSessionTaskTransactionMetrics class], &count);
         for (i = 0; i < count; i++) {
             objc_property_t property = propertyArray[i];
             NSString *proKey = [NSString stringWithCString:property_getName(property) encoding:NSUTF8StringEncoding];
             id proValue = [metrics valueForKey:proKey];
-            [self setValue:proValue forKey:proKey];
+            if (proValue){
+                [self setValue:proValue forKey:proKey];
+            }
         }
         free(propertyArray);
     }
-    return self;
+}
+
+- (void)setValue:(id)value forUndefinedKey:(NSString *)key
+{
+    NSLog(@"%@",key);
 }
 
 @end
