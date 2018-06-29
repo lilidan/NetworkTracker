@@ -7,13 +7,15 @@
 //
 
 #import "DataKeeper.h"
+#import <unicode/utf8.h>
 
-//typedef struct {
-//    BOOL fin;
-//    uint8_t opcode;
-//    BOOL masked;
-//    uint64_t payload_length;
-//} frame_header;
+
+typedef struct {
+    BOOL fin;
+    uint8_t opcode;
+    BOOL masked;
+    uint64_t payload_length;
+} frame_header;
 
 @interface DataKeeper()
 
@@ -22,20 +24,19 @@
 
 @end
 
-//
-//size_t SRDefaultBufferSize(void) {
-//    static size_t size;
-//    static dispatch_once_t onceToken;
-//    dispatch_once(&onceToken, ^{
-//        size = getpagesize();
-//    });
-//    return size;
-//}
+
+size_t SRDefaultBufferSize(void) {
+    static size_t size;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        size = getpagesize();
+    });
+    return size;
+}
 
 @implementation DataKeeper{
     
     dispatch_queue_t _workQueue;
-//    NSMutableArray<SRIOConsumer *> *_consumers;
     
     dispatch_data_t _readBuffer;
     NSUInteger _readBufferOffset;
@@ -71,7 +72,6 @@
     NSMutableSet<NSArray *> *_scheduledRunloops; // Set<[RunLoop, Mode]>. TODO: (nlutsenko) Fix clowntown
 
     NSArray<NSString *> *_requestedProtocols;
-//    SRIOConsumerPool *_consumerPool;
     
     NSMutableArray<NSData *> *_inputQueue;
 }
@@ -91,6 +91,8 @@
     if (self = [super init]) {
         _workQueue = dispatch_queue_create("com.DataKeeperQueue", DISPATCH_QUEUE_SERIAL);
         
+        _keeper = [[NSMutableDictionary alloc] init];
+        
 //        // Going to set a specific on the queue so we can validate we're on the work queue
 //        dispatch_queue_set_specific(_workQueue, (__bridge void *)self, (__bridge void *)(_workQueue), NULL);
 //
@@ -98,25 +100,9 @@
         _outputBuffer = dispatch_data_empty;
         
         _currentFrameData = [[NSMutableData alloc] init];
-//
-//        _consumers = [[NSMutableArray alloc] init];
-//
-//        _consumerPool = [[SRIOConsumerPool alloc] init];
+
         
         _scheduledRunloops = [[NSMutableSet alloc] init];
-//
-//        data_callback dataHandler = ^(NSData *data){
-//            NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-//
-//            dispatch_async(dispatch_get_main_queue(), ^{
-//                NSLog(@"----------------%@----------------%d",str,data.length);
-//            });
-//
-//        };
-//
-//        dispatch_async(_workQueue, ^{
-//           [self _readUntilBytes:CRLFCRLFBytes length:sizeof(CRLFCRLFBytes) callback:dataHandler];
-//        });
 
     }
     return self;
@@ -129,6 +115,12 @@
     return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
 }
 
+- (void)foundPieceData:(NSData *)data
+{
+    NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    NSLog(@"");
+}
+
 - (void)appendData:(const void *)buffer length:(size_t)length ForUrl:(NSString *)url
 {
     
@@ -137,19 +129,46 @@
     }
     
 //    dispatch_async(_workQueue, ^{
-//    if ([url isEqualToString:@"www.sina.com.cn:80"]) {
         dispatch_data_t data = dispatch_data_create(buffer, length, nil, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
-        self->_readBuffer = dispatch_data_create_concat(_readBuffer, data);
-        
-        NSString *str = [[NSString alloc] initWithData:_readBuffer encoding:NSUTF8StringEncoding];
-        NSLog(@"");
+        _readBuffer = dispatch_data_create_concat(_readBuffer, data);
+        size_t readBufferSize = dispatch_data_get_size(_readBuffer);
+        size_t curSize = readBufferSize - _readBufferOffset;
+        NSData *subdata = (NSData *)dispatch_data_create_subrange(_readBuffer, _readBufferOffset, readBufferSize - _readBufferOffset);
+        size_t foundSize = [self scanData:(NSData *)data untilBytes:CRLFCRLFBytes length:sizeof(CRLFCRLFBytes)];
+        if (foundSize) {
+            dispatch_data_t slice = dispatch_data_create_subrange(_readBuffer, _readBufferOffset, foundSize);
+//            _readBufferOffset += foundSize;
+//            _readBuffer = dispatch_data_create_subrange(_readBuffer, _readBufferOffset, readBufferSize - _readBufferOffset);
+            _readBuffer = dispatch_data_empty;
+            _readBufferOffset = 0;
+            [self foundPieceData:(NSData *)slice];
+        }
+//    });
+//    if ([url isEqualToString:@"www.sina.com.cn:80"]) {
+
+    
+//    uint valid_data = validate_dispatch_data_partial_string((NSData *)data);
+//    if (valid_data == -1) {
+//        return;
+//    }
+////
+//    dispatch_data_t readBuffer = [self.keeper objectForKey:url];
+//    if (readBuffer) {
+//        readBuffer = dispatch_data_create_concat(readBuffer, data);
+//    }else{
+//        readBuffer = data;
+//    }
+//    [self.keeper setObject:readBuffer forKey:url];
+
+//
+//
+//        NSString *str = [[NSString alloc] initWithData:_readBuffer encoding:NSUTF8StringEncoding];
 //        if (str.length > 100) {
 //            NSLog(@"-----------------------------------------------------------------------------------%@---------",str);
 //        }else{
 //            NSLog(@"========================================================================================%@==---------",str);
 //        }
     
-//        [self _pumpScanner];
 //        }
     
 //    });
@@ -158,117 +177,74 @@
  
 }
 
-//static const char CRLFCRLFBytes[] = {'\r', '\n', '\r', '\n'};
-//
-//- (void)_readUntilHeaderCompleteWithCallback:(data_callback)dataHandler;
-//{
-//    [self _readUntilBytes:CRLFCRLFBytes length:sizeof(CRLFCRLFBytes) callback:dataHandler];
-//}
-//
-//- (void)_readUntilBytes:(const void *)bytes length:(size_t)length callback:(data_callback)dataHandler;
-//{
-//    // TODO optimize so this can continue from where we last searched
-//    stream_scanner consumer = ^size_t(NSData *data) {
-//        __block size_t found_size = 0;
-//        __block size_t match_count = 0;
-//
-//        size_t size = data.length;
-//        const unsigned char *buffer = data.bytes;
-//        for (size_t i = 0; i < size; i++ ) {
-//            if (((const unsigned char *)buffer)[i] == ((const unsigned char *)bytes)[match_count]) {
-//                match_count += 1;
-//                if (match_count == length) {
-//                    found_size = i + 1;
-//                    break;
-//                }
-//            } else {
-//                match_count = 0;
-//            }
-//        }
-//        return found_size;
-//    };
-//    [self _addConsumerWithScanner:consumer callback:dataHandler];
-//}
-//
-//- (void)_addConsumerWithScanner:(stream_scanner)consumer callback:(data_callback)callback;
-//{
-//    [self _addConsumerWithScanner:consumer callback:callback dataLength:0];
-//}
-//
-//- (void)_addConsumerWithScanner:(stream_scanner)consumer callback:(data_callback)callback dataLength:(size_t)dataLength;
-//{
-//    [_consumers addObject:[_consumerPool consumerWithScanner:consumer handler:callback bytesNeeded:dataLength readToCurrentFrame:NO unmaskBytes:NO]];
-//    [self _pumpScanner];
-//}
-//
-//-(void)_pumpScanner;
-//{
-//    if (!_isPumping) {
-//        _isPumping = YES;
-//    } else {
-//        return;
-//    }
-//
-//    while ([self _innerPumpScanner]) {
-//
-//    }
-//    _isPumping = NO;
-//}
-//
-//
-//
-//// Returns true if did work
-//- (BOOL)_innerPumpScanner {
-//
-//    BOOL didWork = NO;
-//
-//
-//    if (!_consumers.count) {
-//        return didWork;
-//    }
-//
-//    size_t readBufferSize = dispatch_data_get_size(_readBuffer);
-//
-//    size_t curSize = readBufferSize - _readBufferOffset;
-//    if (!curSize) {
-//        return didWork;
-//    }
-//
-//    SRIOConsumer *consumer = [_consumers objectAtIndex:0];
-//
-//    size_t bytesNeeded = consumer.bytesNeeded;
-//
-//    size_t foundSize = 0;
-//    if (consumer.consumer) {
-//        NSData *subdata = (NSData *)dispatch_data_create_subrange(_readBuffer, _readBufferOffset, readBufferSize - _readBufferOffset);
-//        foundSize = consumer.consumer(subdata);
-//    } else {
-//        assert(consumer.bytesNeeded);
-//        if (curSize >= bytesNeeded) {
-//            foundSize = bytesNeeded;
-//        }
-//    }
-//
-//    if (consumer.readToCurrentFrame || foundSize) {
-//        dispatch_data_t slice = dispatch_data_create_subrange(_readBuffer, _readBufferOffset, foundSize);
-//
-//        _readBufferOffset += foundSize;
-//
-//        if (_readBufferOffset > SRDefaultBufferSize() && _readBufferOffset > readBufferSize / 2) {
-//            _readBuffer = dispatch_data_create_subrange(_readBuffer, _readBufferOffset, readBufferSize - _readBufferOffset);
-//            _readBufferOffset = 0;
-//        }
-//
-//        if (foundSize) {
-//
-////            [_consumers removeObjectAtIndex:0];
-//            consumer.handler((NSData *)slice);
-//            [_consumerPool returnConsumer:consumer];
-//            didWork = YES;
-//        }
-//    }
-//    return didWork;
-//}
+static const char CRLFCRLFBytes[] = {'\r', '\n', '\r', '\n'};
+
+- (size_t)scanData:(NSData *)data untilBytes:(const void*)bytes length:(size_t)length
+{
+    size_t found_size = 0;
+    size_t match_count = 0;
+    size_t size = data.length;
+    const unsigned char *buffer = data.bytes;
+    for (size_t i = 0; i < size; i++ ) {
+        if (((const unsigned char *)buffer)[i] == ((const unsigned char *)bytes)[match_count]) {
+            match_count += 1;
+            if (match_count == length) {
+                found_size = i + 1;
+                break;
+            }
+        } else {
+            match_count = 0;
+        }
+    }
+    return found_size;
+}
+
+static inline int32_t validate_dispatch_data_partial_string(NSData *data) {
+    if ([data length] > INT32_MAX) {
+        // INT32_MAX is the limit so long as this Framework is using 32 bit ints everywhere.
+        return -1;
+    }
+    
+    int32_t size = (int32_t)[data length];
+    
+    const void * contents = [data bytes];
+    const uint8_t *str = (const uint8_t *)contents;
+    
+    UChar32 codepoint = 1;
+    int32_t offset = 0;
+    int32_t lastOffset = 0;
+    while(offset < size && codepoint > 0)  {
+        lastOffset = offset;
+        U8_NEXT(str, offset, size, codepoint);
+    }
+    
+    if (codepoint == -1) {
+        // Check to see if the last byte is valid or whether it was just continuing
+        if (!U8_IS_LEAD(str[lastOffset]) || U8_COUNT_TRAIL_BYTES(str[lastOffset]) + lastOffset < (int32_t)size) {
+            
+            size = -1;
+        } else {
+            uint8_t leadByte = str[lastOffset];
+            U8_MASK_LEAD_BYTE(leadByte, U8_COUNT_TRAIL_BYTES(leadByte));
+            
+            for (int i = lastOffset + 1; i < offset; i++) {
+                if (U8_IS_SINGLE(str[i]) || U8_IS_LEAD(str[i]) || !U8_IS_TRAIL(str[i])) {
+                    size = -1;
+                }
+            }
+            
+            if (size != -1) {
+                size = lastOffset;
+            }
+        }
+    }
+    
+    if (size != -1 && ![[NSString alloc] initWithBytesNoCopy:(char *)[data bytes] length:size encoding:NSUTF8StringEncoding freeWhenDone:NO]) {
+        size = -1;
+    }
+    
+    return size;
+}
 
 
 //static inline int32_t validate_dispatch_data_partial_string(NSData *data) {

@@ -127,9 +127,9 @@
         //有URL 才记录
         _data = [[NSMutableData alloc] initWithBytes:buffer length:length];
         _content = [[NSString alloc] initWithData:_data encoding:NSUTF8StringEncoding];
-//        if (type == TrackerEventTypeCFResponse) {
+        if (type == TrackerEventTypeCFResponse) {
 //            [[DataKeeper shareInstance] appendData:buffer length:length ForUrl:_url];
-//        }
+        }
     }
     return self;
 }
