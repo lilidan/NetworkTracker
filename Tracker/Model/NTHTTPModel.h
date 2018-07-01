@@ -11,14 +11,6 @@
 
 @interface NTHTTPModel : NTBaseModel
 
-//date time stamp
-@property (nonatomic, strong) NSDate *requestStartDate;
-@property (nonatomic, strong) NSDate *requestEndDate;
-@property (nonatomic, strong) NSDate *responseStartDate;
-@property (nonatomic, strong) NSDate *responseEndDate;
-
-
-@property (nonatomic, strong) NSURLRequest *request;
 @property (nonatomic, strong) NSURLResponse *response;
 
 @property (nonatomic, strong) NSString *networkProtocolName;//"HTTP/1.1"

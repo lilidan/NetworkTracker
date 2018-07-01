@@ -6,12 +6,13 @@
 //  Copyright © 2018年 sgcy. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 
 @interface NTDataKeeper : NSObject
 
 + (instancetype)shareInstance;
 
 - (void)trackSessionMetrics:(NSURLSessionTaskMetrics *)metrics API_AVAILABLE(ios(10.0));
+- (void)trackWebViewTimingStr:(NSString *)timingStr request:(NSURLRequest *)request;
 
 @end

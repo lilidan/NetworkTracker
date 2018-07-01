@@ -8,6 +8,8 @@
 
 #import <Foundation/Foundation.h>
 
+
+
 @interface NTBaseModel : NSObject
 
 @property (nonatomic, strong) NSDate *fetchStartDate;
@@ -22,5 +24,19 @@
 
 @property (nonatomic, strong) NSString *remoteAddressAndPort;
 @property (nonatomic, strong) NSString *remoteURL;
+
+@end
+
+
+@interface NTHTTPBaseModel : NTBaseModel
+
+@property (nonatomic, strong) NSURLRequest *request;
+
+//date time stamp
+@property (nonatomic, strong) NSDate *requestStartDate;
+@property (nonatomic, strong) NSDate *requestEndDate;
+@property (nonatomic, strong) NSDate *responseStartDate;
+@property (nonatomic, strong) NSDate *responseEndDate;
+
 
 @end

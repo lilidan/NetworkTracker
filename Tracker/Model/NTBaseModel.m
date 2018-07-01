@@ -11,3 +11,8 @@
 @implementation NTBaseModel
 
 @end
+
+@implementation NTHTTPBaseModel
+
+
+@end

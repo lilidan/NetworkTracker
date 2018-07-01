@@ -8,10 +8,12 @@
 
 #import "NTDataKeeper.h"
 #import "NTHTTPModel.h"
+#import "NTWebModel.h"
 
 @interface NTDataKeeper()
 
 @property (nonatomic,strong) NSMutableArray<NTHTTPModel *> *httpModels;
+@property (nonatomic,strong) NSMutableArray<NTWebModel *> *webModels;
 
 @end
 
@@ -35,6 +37,14 @@ API_AVAILABLE(ios(10.0)){
             NTHTTPModel *model = [[NTHTTPModel alloc] initWithTransactionMetrics:transMetric];
             [self.httpModels addObject:model];
         }
+    }
+}
+
+- (void)trackWebViewTimingStr:(NSString *)timingStr request:(NSURLRequest *)request
+{
+    if (request) {
+        NTWebModel *model = [[NTWebModel alloc] initWithJsonStr:timingStr request:request];
+        [self.webModels addObject:model];
     }
 }
 
