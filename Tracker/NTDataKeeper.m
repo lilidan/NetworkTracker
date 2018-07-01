@@ -9,11 +9,15 @@
 #import "NTDataKeeper.h"
 #import "NTHTTPModel.h"
 #import "NTWebModel.h"
+#import "NTTCPModel.h"
+#import "NTTrackEvent.h"
 
 @interface NTDataKeeper()
 
 @property (nonatomic,strong) NSMutableArray<NTHTTPModel *> *httpModels;
 @property (nonatomic,strong) NSMutableArray<NTWebModel *> *webModels;
+@property (nonatomic,strong) NSMutableArray<NTTCPModel *> *tcpModels;
+@property (nonatomic,strong) NSMutableDictionary *currentTcpPairs;
 
 @end
 
@@ -25,6 +29,10 @@
     static NTDataKeeper* sharedInstance;
     dispatch_once(&once, ^{
         sharedInstance = [[NTDataKeeper alloc] init];
+        sharedInstance.httpModels = [[NSMutableArray alloc] init];
+        sharedInstance.webModels = [[NSMutableArray alloc] init];
+        sharedInstance.tcpModels = [[NSMutableArray alloc] init];
+        sharedInstance.currentTcpPairs = [[NSMutableDictionary alloc] init];
     });
     return sharedInstance;
 }
@@ -46,6 +54,17 @@ API_AVAILABLE(ios(10.0)){
         NTWebModel *model = [[NTWebModel alloc] initWithJsonStr:timingStr request:request];
         [self.webModels addObject:model];
     }
+}
+
+- (void)trackEvent:(NTTrackEvent *)event
+{
+    NTTCPModel *model = [self.currentTcpPairs objectForKey:event.url];
+    if (!model) {
+        model = [[NTTCPModel alloc] init];
+        [self.tcpModels addObject:model];
+        [self.currentTcpPairs setObject:model forKey:event.url];
+    }
+    [model updateWithEvent:event];
 }
 
 @end

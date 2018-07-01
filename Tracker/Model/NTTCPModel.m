@@ -10,4 +10,9 @@
 
 @implementation NTTCPModel
 
+- (void)updateWithEvent:(NTTrackEvent *)event
+{
+    
+}
+
 @end

@@ -8,11 +8,14 @@
 
 #import <UIKit/UIKit.h>
 
+@class NTTrackEvent;
+
 @interface NTDataKeeper : NSObject
 
 + (instancetype)shareInstance;
 
 - (void)trackSessionMetrics:(NSURLSessionTaskMetrics *)metrics API_AVAILABLE(ios(10.0));
 - (void)trackWebViewTimingStr:(NSString *)timingStr request:(NSURLRequest *)request;
+- (void)trackEvent:(NTTrackEvent *)event;
 
 @end

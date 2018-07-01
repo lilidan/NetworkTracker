@@ -45,10 +45,9 @@
     NSLog(@"%@",[[self shareInstance] cachedHost]);
 }
 
-+ (void)trackEvent:(TrackEvent *)event
++ (void)trackEvent:(NTTrackEvent *)event
 {
     NSString *className = NSStringFromClass(self);
-    event.trackerName = className;
     dispatch_async(dispatch_get_main_queue(), ^{
         NSLog(@"%@",event);
     });

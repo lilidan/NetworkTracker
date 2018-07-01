@@ -8,13 +8,13 @@
 
 #import <Foundation/Foundation.h>
 #import "fishhook.h"
-#import "TrackEvent.h"
+#import "NTTrackEvent.h"
 
 @interface BaseTracker : NSObject
 
 + (void)hook;
 
-+ (void)trackEvent:(TrackEvent *)event;
++ (void)trackEvent:(NTTrackEvent *)event;
 
 
 @end

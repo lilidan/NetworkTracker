@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import "NTBaseModel.h"
+#import "NTTrackEvent.h"
 
 @interface NTTCPItem : NSObject
 
@@ -17,11 +18,15 @@
 @property (nonatomic, strong) NSDate *startDate;
 @property (nonatomic, strong) NSDate *endDate;
 
+@property (nonatomic, assign) BOOL viaSSL;
+
 @end
 
 @interface NTTCPModel : NTBaseModel
 
-@property (nonatomic,strong) NSArray *requestItems;
-@property (nonatomic,strong) NSArray *responssItems;
+@property (nonatomic,strong) NSMutableArray<NTTCPItem *> *requestItems;
+@property (nonatomic,strong) NSMutableArray<NTTCPItem *> *responssItems;
+
+- (void)updateWithEvent:(NTTrackEvent *)event;
 
 @end
