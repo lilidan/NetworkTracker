@@ -104,25 +104,25 @@ static int objc_bind(int fd, const struct sockaddr *addr, socklen_t length)
 
 static int objc_connect(int fd, const struct sockaddr *addr, socklen_t length)
 {
-    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeConnect| TrackEventTimeTypeBegin fd:fd addr:(struct sockaddr_in *)addr]];
+    NSDate *startTime = [NSDate date];
     int result = origin_connect(fd, addr, length);
-    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeConnect|TrackEventTimeTypeEnd fd:fd addr:(struct sockaddr_in *)addr]];
+    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeConnect startTime:startTime fd:fd addr:(struct sockaddr_in *)addr]];
     return result;
 }
 
 ssize_t objc_sendmsg(int fd, const struct msghdr *msg, int flags)
 {
-    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeWrite| TrackEventTimeTypeBegin fd:fd msg:(struct msghdr *)msg]];
+    NSDate *startTime = [NSDate date];
     ssize_t result = origin_sendmsg(fd,msg,flags);
-    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeWrite| TrackEventTimeTypeEnd fd:fd msg:(struct msghdr *)msg]];
+    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeWrite startTime:startTime fd:fd msg:(struct msghdr *)msg]];
     return result;
 }
 
 ssize_t objc_recvmsg(int fd, struct msghdr *msg, int flags)
 {
-    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeRead| TrackEventTimeTypeBegin fd:fd msg:(struct msghdr *)msg]];
+    NSDate *startTime = [NSDate date];
     ssize_t result = origin_recvmsg(fd,msg,flags);
-    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeRead| TrackEventTimeTypeEnd fd:fd msg:(struct msghdr *)msg]];
+    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeRead startTime:startTime fd:fd msg:(struct msghdr *)msg]];
     return result;
 }
 
@@ -141,30 +141,33 @@ ssize_t objc_recvfrom(int fd,void *buffer, size_t size,int flags,struct sockaddr
 
 static ssize_t objc_send(int fd, const void *buffer, size_t size, int d)
 {
-    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeRead| TrackEventTimeTypeBegin fd:fd msg:(struct msghdr *)msg]];
+    NSDate *startTime = [NSDate date];
     ssize_t result = origin_send(fd, buffer, size, d);
-    [SocketTracker trackEvent:[[NTTrackEvent alloc] initWithType:TrackerEventTypeRequest fd:fd buffer:buffer length:size]];
+    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeWrite startTime:startTime fd:fd buffer:buffer length:size]];
     return result;
 }
 
 static ssize_t objc_recv(int fd, void *buffer, size_t size, int d)
 {
+    NSDate *startTime = [NSDate date];
     ssize_t result = origin_recv(fd, buffer, size, d);
-    [SocketTracker trackEvent:[[NTTrackEvent alloc] initWithType:TrackerEventTypeResponse fd:fd buffer:buffer length:size]];
+    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeRead startTime:startTime fd:fd buffer:buffer length:size]];
     return result;
 }
 
 static ssize_t objc_write(int fd, const void *buffer, size_t size)
 {
+    NSDate *startTime = [NSDate date];
     ssize_t result = origin_write(fd, buffer, size);
-    [SocketTracker trackEvent:[[NTTrackEvent alloc] initWithType:TrackerEventTypeRequest fd:fd buffer:buffer length:size]];
+    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeWrite startTime:startTime fd:fd buffer:buffer length:size]];
     return result;
 }
 
 static ssize_t objc_read(int fd, void *buffer, size_t size)
 {
+    NSDate *startTime = [NSDate date];
     ssize_t result = origin_read(fd, buffer, size);
-    [SocketTracker trackEvent:[[NTTrackEvent alloc] initWithType:TrackerEventTypeResponse fd:fd buffer:buffer length:size]];
+    [SocketTracker trackEvent:[NTTrackEvent socketEventWithType:TrackEventActionTypeRead startTime:startTime fd:fd buffer:buffer length:size]];
     return result;
 }
 

@@ -7,7 +7,7 @@
 //
 
 #import "BaseTracker.h"
-#import "TrackEvent.h"
+#import "NTTrackEvent.h"
 
 @interface NSStreamTracker : BaseTracker
 

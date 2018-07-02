@@ -33,7 +33,7 @@ CFIndex (*origin_CFWriteStreamWrite)(CFWriteStreamRef stream, const UInt8 *buffe
 
 + (void)load
 {
-    int result = rcd_rebind_symbols((struct rcd_rebinding[6]){
+    rcd_rebind_symbols((struct rcd_rebinding[6]){
         {
             "CFReadStreamRead",
             objc_CFReadStreamRead,
@@ -93,60 +93,44 @@ void objc_CFURLConnectionStart(void *connection)
 Boolean objc_CFWriteStreamSetClient(CFWriteStreamRef stream, CFOptionFlags streamEvents, CFWriteStreamClientCallBack clientCB, CFStreamClientContext *clientContext)
 {
     Boolean result = origin_CFWriteStreamSetClient(stream,streamEvents,clientCB,clientContext);
-    [CFStreamTracker trackEvent:[[NTTrackEvent alloc] initWithType:TrackerEventTypeCFRequestListen stream:stream]];
     return result;
 }
 
 Boolean objc_CFReadStreamSetClient(CFReadStreamRef stream, CFOptionFlags streamEvents, CFReadStreamClientCallBack clientCB, CFStreamClientContext *clientContext)
 {
     Boolean result = origin_CFReadStreamSetClient(stream,streamEvents,clientCB,clientContext);
-    [CFStreamTracker trackEvent:[[NTTrackEvent alloc] initWithType:TrackerEventTypeCFResponseListen stream:stream]];
     return result;
 }
 
-//static void CFWriteStreamCallback (CFWriteStreamRef stream, CFStreamEventType type, void *pInfo)
-//{
-//    if ([CFStreamTracker shareInstance].writeCallBack != NULL) {
-//        [CFStreamTracker shareInstance].writeCallBack(stream,type,pInfo);
-//    }else{
-//        NSLog(@"");
-//    }
-//}
-//static void CFReadStreamCallback (CFReadStreamRef stream, CFStreamEventType type, void *pInfo)
-//{
-//    if ([CFStreamTracker shareInstance].readCallBack != NULL) {
-//        [CFStreamTracker shareInstance].readCallBack(stream,type,pInfo);
-//    }else{
-//        NSLog(@"");
-//    }
-//}
-
 static Boolean objc_CFWriteStreamOpen(CFWriteStreamRef stream)
 {
+    NSDate *startTime = [NSDate date];
     BOOL open = origin_CFWriteStreamOpen(stream);
-    [CFStreamTracker trackEvent:[[NTTrackEvent alloc] initWithType:TrackerEventTypeCFRequestOpen stream:stream]];
+    [CFStreamTracker trackEvent:[NTTrackEvent streamEventWithType:TrackEventActionTypeCFWriteConnect startTime:startTime stream:stream]];
     return open;
 }
 
 static Boolean objc_CFReadStreamOpen(CFReadStreamRef stream)
 {
+    NSDate *startTime = [NSDate date];
     BOOL open = origin_CFReadStreamOpen(stream);
-    [CFStreamTracker trackEvent:[[NTTrackEvent alloc] initWithType:TrackerEventTypeCFResponseOpen stream:stream]];
+    [CFStreamTracker trackEvent:[NTTrackEvent streamEventWithType:TrackEventActionTypeConnect startTime:startTime stream:stream]];
     return open;
 }
 
 static CFIndex objc_CFReadStreamRead(CFReadStreamRef stream, UInt8 *buffer, CFIndex bufferLength)
 {
-    
+    NSDate *startTime = [NSDate date];
     CFIndex index = origin_CFReadStreamRead(stream,buffer,bufferLength);
-    [CFStreamTracker trackEvent:[[NTTrackEvent alloc] initWithType:TrackerEventTypeCFResponse buffer:buffer length:bufferLength stream:stream]];
+    [CFStreamTracker trackEvent:[NTTrackEvent streamEventWithType:TrackEventActionTypeRead startTime:startTime buffer:buffer length:bufferLength stream:stream]];
     return index;
 }
 
 static CFIndex objc_CFWriteStreamWrite(CFWriteStreamRef stream, const UInt8 *buffer, CFIndex bufferLength)
 {
+    NSDate *startTime = [NSDate date];
     CFIndex index = origin_CFWriteStreamWrite(stream,buffer,bufferLength);
-    [CFStreamTracker trackEvent:[[NTTrackEvent alloc] initWithType:TrackerEventTypeCFRequest buffer:buffer length:bufferLength stream:stream]];
+    [CFStreamTracker trackEvent:[NTTrackEvent streamEventWithType:TrackEventActionTypeWrite startTime:startTime buffer:buffer length:bufferLength stream:stream]];
     return index;
 }
 

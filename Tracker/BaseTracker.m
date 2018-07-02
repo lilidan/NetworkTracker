@@ -8,49 +8,19 @@
 
 #import "BaseTracker.h"
 #import "TrackerUtils.h"
+#import "NTDataKeeper.h"
 
 @interface BaseTracker()
-
-@property (nonatomic,strong) NSMutableDictionary *cachedHost;
 
 @end
 
 
 @implementation BaseTracker
 
-+ (void)load
-{
-    [self hook];
-}
 
-+ (void)hook
++ (void)trackEvent:(NTEventBase *)event
 {
-    
-}
-
-+ (instancetype)shareInstance
-{
-    static dispatch_once_t once;
-    static BaseTracker* sharedInstance;
-    dispatch_once(&once, ^{
-        sharedInstance = [[BaseTracker alloc] init];
-        sharedInstance.cachedHost = [[NSMutableDictionary alloc] init];
-    });
-    return sharedInstance;
-}
-
-+ (void)cacheRemoteHost:(NSString *)host fd:(int)fd
-{
-    [[[self shareInstance] cachedHost] setObject:host forKey:@(fd)];
-    NSLog(@"%@",[[self shareInstance] cachedHost]);
-}
-
-+ (void)trackEvent:(NTTrackEvent *)event
-{
-    NSString *className = NSStringFromClass(self);
-    dispatch_async(dispatch_get_main_queue(), ^{
-        NSLog(@"%@",event);
-    });
+    [[NTDataKeeper shareInstance] trackEvent:event];
 }
 
 @end

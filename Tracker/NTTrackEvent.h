@@ -8,17 +8,13 @@
 
 #import <Foundation/Foundation.h>
 
-typedef NS_OPTIONS(NSUInteger, TrackEventActionType) {
-    TrackEventActionTypeConnect = 1<<0,
-    TrackEventActionTypeWrite = 1<<1,
-    TrackEventActionTypeRead = 1<<2,
-    TrackEventActionTypeClose = 1<<3,
-    
-    TrackEventTimeTypeBegin = 1<<5,
-    TrackEventTimeTypeEnd = 1<<6,
-    
-    TrackEventActionTypeCFRead = 1 << 7,//core foundation
-    TrackEventActionTypeCFWrite = 1 << 8
+typedef NS_ENUM(NSUInteger, TrackEventActionType) {
+    TrackEventActionTypeConnect = 0,
+    TrackEventActionTypeClose,
+    TrackEventActionTypeRead,
+    TrackEventActionTypeWrite,
+    TrackEventActionTypeCFWriteConnect, //if CoreFoundation, defalt connect/close matches CFReadOpen/CFReadClose
+    TrackEventActionTypeCFWriteClose
 };
 
 typedef NS_ENUM(NSUInteger, TrackEventSourceType) {
@@ -27,28 +23,49 @@ typedef NS_ENUM(NSUInteger, TrackEventSourceType) {
     TrackEventSourceTypeSSL
 };
 
-@interface NTTrackEvent : NSObject
+
+@interface NTEventBase : NSObject
+
+@property (nonatomic,strong) NSDate *startTime;
+@property (nonatomic,strong) NSDate *endTime;
+
+@end
+
+@interface NTTrackEvent : NTEventBase
 
 @property (nonatomic,assign) TrackEventActionType actionType;
 @property (nonatomic,assign) TrackEventSourceType sourceType;
 
 @property (nonatomic,strong) NSString *url;
+@property (nonatomic,strong) NSString *host;
+@property (nonatomic,assign) int port;
 
 @property (nonatomic,strong) NSData *data;
 @property (nonatomic,strong) NSString *content;
 
 // for socket
-+ (instancetype)socketEventWithType:(TrackEventActionType)type fd:(int)fd addr:(struct sockaddr_in *)addr;
-+ (instancetype)socketEventWithType:(TrackEventActionType)type fd:(int)fd buffer:(const void *)buffer length:(size_t)length;//socket:read/write
-+ (instancetype)socketEventWithType:(TrackEventActionType)type fd:(int)fd msg:(struct msghdr *)msg; //socket:msg
++ (instancetype)socketEventWithType:(TrackEventActionType)type startTime:(NSDate *)startTime fd:(int)fd addr:(struct sockaddr_in *)addr ;
++ (instancetype)socketEventWithType:(TrackEventActionType)type startTime:(NSDate *)startTime fd:(int)fd buffer:(const void *)buffer length:(size_t)length;//socket:read/write
++ (instancetype)socketEventWithType:(TrackEventActionType)type startTime:(NSDate *)startTime fd:(int)fd msg:(struct msghdr *)msg; //socket:msg
 
 // for CFStream
-+ (instancetype)streamEventWithType:(TrackEventActionType)type stream:(void *)stream;
-+ (instancetype)streamEventWithType:(TrackEventActionType)type buffer:(const void *)buffer length:(size_t)length stream:(void *)stream;
++ (instancetype)streamEventWithType:(TrackEventActionType)type startTime:(NSDate *)startTime stream:(void *)stream;
++ (instancetype)streamEventWithType:(TrackEventActionType)type startTime:(NSDate *)startTime buffer:(const void *)buffer length:(size_t)length stream:(void *)stream;
 
 // for SSL
-+ (instancetype)sslEventWithType:(TrackEventActionType)type context:(SSLContextRef)context;
-+ (instancetype)sslEventWithType:(TrackEventActionType)type buffer:(const void *)buffer length:(size_t)length context:(SSLContextRef)context;
++ (instancetype)sslEventWithType:(TrackEventActionType)type startTime:(NSDate *)startTime context:(SSLContextRef)context;
++ (instancetype)sslEventWithType:(TrackEventActionType)type startTime:(NSDate *)startTime buffer:(const void *)buffer length:(size_t)length context:(SSLContextRef)context;
 
+@end
+
+
+@interface NTDNSEvent : NTEventBase
+
+@property (nonatomic,strong) NSString *url;
+@property (nonatomic,strong) NSArray *results;
+
+
+// for DNS
++ (instancetype)dnsEventWithStartTime:(NSDate *)startTime host:(const char *)host port:(const char *)port addr:(struct addrinfo **)addr;
 
 @end

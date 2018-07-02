@@ -12,9 +12,8 @@
 
 @interface BaseTracker : NSObject
 
-+ (void)hook;
 
-+ (void)trackEvent:(NTTrackEvent *)event;
++ (void)trackEvent:(NTEventBase *)event;
 
 
 @end

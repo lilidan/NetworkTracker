@@ -18,6 +18,7 @@
 @property (nonatomic,strong) NSMutableArray<NTWebModel *> *webModels;
 @property (nonatomic,strong) NSMutableArray<NTTCPModel *> *tcpModels;
 @property (nonatomic,strong) NSMutableDictionary *currentTcpPairs;
+@property (nonatomic,strong) NSMutableDictionary *dnsPairs;
 
 @end
 
@@ -56,8 +57,19 @@ API_AVAILABLE(ios(10.0)){
     }
 }
 
-- (void)trackEvent:(NTTrackEvent *)event
+- (void)trackEvent:(NTEventBase *)baseEvent
 {
+
+    if ([[baseEvent class] isKindOfClass:[NTDNSEvent class]]) {
+        [self trackDNSEvent:(NTDNSEvent *)baseEvent];
+        return;
+    }
+    
+    NTTrackEvent *event = (NTTrackEvent *)baseEvent;
+    if (!event.url) {
+        return;
+    }
+    
     NTTCPModel *model = [self.currentTcpPairs objectForKey:event.url];
     if (!model) {
         model = [[NTTCPModel alloc] init];
@@ -65,6 +77,11 @@ API_AVAILABLE(ios(10.0)){
         [self.currentTcpPairs setObject:model forKey:event.url];
     }
     [model updateWithEvent:event];
+}
+
+- (void)trackDNSEvent:(NTDNSEvent *)event
+{
+    
 }
 
 @end

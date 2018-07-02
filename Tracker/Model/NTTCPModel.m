@@ -12,7 +12,7 @@
 
 - (void)updateWithEvent:(NTTrackEvent *)event
 {
-    
+    NSLog(@"%@",event.url);
 }
 
 @end

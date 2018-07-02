@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 #import "NTBaseModel.h"
 
-@interface NTHTTPModel : NTBaseModel
+@interface NTHTTPModel : NTHTTPBaseModel
 
 @property (nonatomic, strong) NSURLResponse *response;
 

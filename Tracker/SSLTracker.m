@@ -37,22 +37,25 @@ OSStatus (*origin_SSLHandshake)(SSLContextRef context);
 
 OSStatus objc_SSLHandshake(SSLContextRef context)
 {
+    NSDate *startDate = [NSDate date];
     OSStatus result = origin_SSLHandshake(context);
-    [SSLTracker trackEvent:[[NTTrackEvent alloc] initWithType:TrackerEventTypeSSLHandshake stream:context]];
+    [SSLTracker trackEvent:[NTTrackEvent sslEventWithType:TrackEventActionTypeConnect startTime:startDate context:context]];
     return result;
 }
 
 OSStatus objc_SSLRead(SSLContextRef context,const void *data,size_t dataLength,size_t *processed)
 {
+    NSDate *startDate = [NSDate date];
     OSStatus result = origin_SSLRead(context,data,dataLength,processed);
-    [SSLTracker trackEvent:[[NTTrackEvent alloc] initWithType:TrackerEventTypeSSLResponse buffer:data length:dataLength stream:context]];
+    [SSLTracker trackEvent:[NTTrackEvent sslEventWithType:TrackEventActionTypeRead startTime:startDate buffer:data length:dataLength context:context]];
     return result;
 }
 
 OSStatus objc_SSLWrite(SSLContextRef context,const void *data,size_t dataLength,size_t *processed)
 {
+    NSDate *startDate = [NSDate date];
     OSStatus result = origin_SSLWrite(context,data,dataLength,processed);
-    [SSLTracker trackEvent:[[NTTrackEvent alloc] initWithType:TrackerEventTypeSSLRequest buffer:data length:dataLength stream:context]];
+    [SSLTracker trackEvent:[NTTrackEvent sslEventWithType:TrackEventActionTypeWrite startTime:startDate buffer:data length:dataLength context:context]];
     return result;
 }
 
