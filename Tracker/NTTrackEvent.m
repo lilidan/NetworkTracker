@@ -162,12 +162,12 @@
 @implementation NTDNSEvent
 
 
-+ (instancetype)dnsEventWithStartTime:(NSDate *)startTime host:(const char *)host port:(const char *)port addr:(struct addrinfo **)addr
++ (instancetype)dnsEventWithStartTime:(NSDate *)startTime host:(const char *)host port:(const char *)port addr:(struct addrinfo *)addr
 {
     return [[self alloc] initWithStartTime:startTime host:host port:port addr:addr];
 }
 
-- (instancetype)initWithStartTime:(NSDate *)startTime host:(const char *)host port:(const char *)port addr:(struct addrinfo **)addr
+- (instancetype)initWithStartTime:(NSDate *)startTime host:(const char *)host port:(const char *)port addr:(struct addrinfo *)addr
 {
     if (self = [super init]) {
         self.startTime = startTime;
@@ -181,7 +181,7 @@
         NSMutableArray *results = [[NSMutableArray alloc] init];
         
         struct addrinfo *res;
-        struct addrinfo *res0 = &addr;
+        struct addrinfo *res0 = addr;
         
         for (res = res0; res; res = res->ai_next)
         {

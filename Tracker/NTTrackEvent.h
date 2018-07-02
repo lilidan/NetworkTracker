@@ -66,6 +66,6 @@ typedef NS_ENUM(NSUInteger, TrackEventSourceType) {
 
 
 // for DNS
-+ (instancetype)dnsEventWithStartTime:(NSDate *)startTime host:(const char *)host port:(const char *)port addr:(struct addrinfo **)addr;
++ (instancetype)dnsEventWithStartTime:(NSDate *)startTime host:(const char *)host port:(const char *)port addr:(struct addrinfo *)addr;
 
 @end

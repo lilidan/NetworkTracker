@@ -8,11 +8,12 @@
 
 #import "DNSTracker.h"
 #import "fishhook.h"
-#include <arpa/inet.h>
-#include <ifaddrs.h>
-#include <resolv.h>
-#include <dns.h>
+#import <arpa/inet.h>
+#import <ifaddrs.h>
+#import <resolv.h>
+#import <dns.h>
 #import "NTDataKeeper.h"
+#import <netdb.h>
 
 @implementation DNSTracker
 
@@ -22,10 +23,12 @@ struct hostent* (*origin_gethostbyname)(const char *);
 Boolean (*origin_CFHostStartInfoResolution) (CFHostRef theHost, CFHostInfoType info, CFStreamError *error);
 int (*origin_res_9_query)(const char *dname, int class, int type, unsigned char *answer, int anslen);
 int32_t (*origin_dns_query)(dns_handle_t dns, const char *name, uint32_t dnsclass, uint32_t dnstype, char *buf, uint32_t len, struct sockaddr *from, uint32_t *fromlen);
+void *(*origin_getaddrinfo_a)(int a,...);
+int32_t (*origin_getaddrinfo_async_start)(mach_port_t *p, const char *nodename, const char *servname, const struct addrinfo *hints, void *callback, void *context);
 
 + (void)load
 {
-    rcd_rebind_symbols((struct rcd_rebinding[6]){
+    rcd_rebind_symbols((struct rcd_rebinding[8]){
         {
             "getaddrinfo",
             objc_getaddrinfo,
@@ -55,8 +58,32 @@ int32_t (*origin_dns_query)(dns_handle_t dns, const char *name, uint32_t dnsclas
             "dns_query",
             objc_dns_query,
             (void *)&origin_dns_query
+        },
+        {
+            "getaddrinfo_a",
+            objc_getaddrinfo_a,
+            (void *)&origin_getaddrinfo_a
+        },
+        {
+            "getaddrinfo_async_start",
+            objc_getaddrinfo_async_start,
+            (void *)&origin_getaddrinfo_async_start
         }
-    }, 6);
+    }, 8);
+}
+
+int objc_getaddrinfo_a(int a,...)
+{
+    abort();
+    return 1;
+}
+
+int32_t objc_getaddrinfo_async_start(mach_port_t *p, const char *nodename, const char *servname, const struct addrinfo *hints, void *callback, void *context)
+{
+    int32_t result = origin_getaddrinfo_async_start(p,nodename,servname,hints,callback,context);
+    abort();
+    NSLog(@"");
+    return result;
 }
 
 int objc_res_9_query(const char *dname, int class, int type, unsigned char *answer, int anslen)
@@ -77,7 +104,8 @@ int  objc_getaddrinfo(const char *host, const char *port,const struct addrinfo *
 {
     NSDate *startDate = [NSDate date];
     int result = origin_getaddrinfo(host,port,hints,res);
-    [DNSTracker trackEvent:[NTDNSEvent dnsEventWithStartTime:startDate host:host port:port addr:res]];
+    NSString *errMsg = [NSString stringWithCString:gai_strerror(result) encoding:NSASCIIStringEncoding];
+    [DNSTracker trackEvent:[NTDNSEvent dnsEventWithStartTime:startDate host:host port:port addr:*res]];
     return result;
 }
 
