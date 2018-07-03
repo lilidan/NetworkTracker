@@ -82,7 +82,6 @@ int32_t objc_getaddrinfo_async_start(mach_port_t *p, const char *nodename, const
 {
     int32_t result = origin_getaddrinfo_async_start(p,nodename,servname,hints,callback,context);
     abort();
-    NSLog(@"");
     return result;
 }
 
@@ -103,10 +102,19 @@ int32_t objc_dns_query(dns_handle_t dns, const char *name, uint32_t dnsclass, ui
 int  objc_getaddrinfo(const char *host, const char *port,const struct addrinfo *hints,struct addrinfo ** res)
 {
     NSDate *startDate = [NSDate date];
-    int result = origin_getaddrinfo(host,port,hints,res);
+    
+    const char *host1 = "www.baidu.com";
+    const char *service = NULL;
+    struct addrinfo hint, *result, *next;
+    memset(&hint, 0, sizeof(hint));
+    hint.ai_family = AF_UNSPEC;
+
+    int resss = origin_getaddrinfo(host1,service,&hint,&result);
+    
+    
     NSString *errMsg = [NSString stringWithCString:gai_strerror(result) encoding:NSASCIIStringEncoding];
     [DNSTracker trackEvent:[NTDNSEvent dnsEventWithStartTime:startDate host:host port:port addr:*res]];
-    return result;
+    return resss;
 }
 
 struct hostent* objc_gethostbyname(const char *name)
