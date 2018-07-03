@@ -12,7 +12,9 @@
 
 - (void)updateWithEvent:(NTTrackEvent *)event
 {
-    NSLog(@"%@",event.url);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSLog(@"%@",event.url);
+    });
 }
 
 @end

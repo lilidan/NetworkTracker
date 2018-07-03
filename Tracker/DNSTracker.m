@@ -23,8 +23,8 @@ struct hostent* (*origin_gethostbyname)(const char *);
 Boolean (*origin_CFHostStartInfoResolution) (CFHostRef theHost, CFHostInfoType info, CFStreamError *error);
 int (*origin_res_9_query)(const char *dname, int class, int type, unsigned char *answer, int anslen);
 int32_t (*origin_dns_query)(dns_handle_t dns, const char *name, uint32_t dnsclass, uint32_t dnstype, char *buf, uint32_t len, struct sockaddr *from, uint32_t *fromlen);
-void *(*origin_getaddrinfo_a)(int a,...);
-int32_t (*origin_getaddrinfo_async_start)(mach_port_t *p, const char *nodename, const char *servname, const struct addrinfo *hints, void *callback, void *context);
+mach_port_t (*origin_CreateDNSLookup)(int a,...);
+int32_t (*origin_getaddrinfo_async_start)(mach_port_t *p, ...);
 
 + (void)load
 {
@@ -35,7 +35,7 @@ int32_t (*origin_getaddrinfo_async_start)(mach_port_t *p, const char *nodename, 
             (void *)&origin_getaddrinfo
         },
         {
-            "gethostbyname",
+            "gethostbyname2",
             objc_gethostbyname,
             (void *)&origin_gethostbyname
         },
@@ -60,9 +60,9 @@ int32_t (*origin_getaddrinfo_async_start)(mach_port_t *p, const char *nodename, 
             (void *)&origin_dns_query
         },
         {
-            "getaddrinfo_a",
-            objc_getaddrinfo_a,
-            (void *)&origin_getaddrinfo_a
+            "_CreateDNSLookup",
+            objc_CreateDNSLookup,
+            (void *)&origin_CreateDNSLookup
         },
         {
             "getaddrinfo_async_start",
@@ -72,17 +72,17 @@ int32_t (*origin_getaddrinfo_async_start)(mach_port_t *p, const char *nodename, 
     }, 8);
 }
 
-int objc_getaddrinfo_a(int a,...)
+CFTypeRef objc_CreateDNSLookup(int a,...)
 {
     abort();
-    return 1;
+    return NULL;
 }
 
-int32_t objc_getaddrinfo_async_start(mach_port_t *p, const char *nodename, const char *servname, const struct addrinfo *hints, void *callback, void *context)
+int32_t objc_getaddrinfo_async_start(mach_port_t *p,...)
 {
-    int32_t result = origin_getaddrinfo_async_start(p,nodename,servname,hints,callback,context);
     abort();
-    return result;
+//    int32_t result = origin_getaddrinfo_async_start(p);
+    return 1;
 }
 
 int objc_res_9_query(const char *dname, int class, int type, unsigned char *answer, int anslen)
@@ -102,19 +102,19 @@ int32_t objc_dns_query(dns_handle_t dns, const char *name, uint32_t dnsclass, ui
 int  objc_getaddrinfo(const char *host, const char *port,const struct addrinfo *hints,struct addrinfo ** res)
 {
     NSDate *startDate = [NSDate date];
-    
-    const char *host1 = "www.baidu.com";
-    const char *service = NULL;
-    struct addrinfo hint, *result, *next;
+    struct addrinfo hint;
     memset(&hint, 0, sizeof(hint));
-    hint.ai_family = AF_UNSPEC;
-
-    int resss = origin_getaddrinfo(host1,service,&hint,&result);
+    hint.ai_family = hints->ai_family;
+    hint.ai_socktype = hints->ai_socktype;
+    hint.ai_protocol = hints->ai_protocol;
+    if (host == "www.baidu.com") {
+        host = "www.zhihu.com";
+    }
+    int result = origin_getaddrinfo(host,port,&hint,res);
     
-    
-    NSString *errMsg = [NSString stringWithCString:gai_strerror(result) encoding:NSASCIIStringEncoding];
-    [DNSTracker trackEvent:[NTDNSEvent dnsEventWithStartTime:startDate host:host port:port addr:*res]];
-    return resss;
+//    NSString *errMsg = [NSString stringWithCString:gai_strerror(result) encoding:NSASCIIStringEncoding];
+//    [DNSTracker trackEvent:[NTDNSEvent dnsEventWithStartTime:startDate host:host port:port addr:*res]];
+    return result;
 }
 
 struct hostent* objc_gethostbyname(const char *name)
@@ -124,7 +124,7 @@ struct hostent* objc_gethostbyname(const char *name)
     return result;
 }
 
-Boolean objc_CFHostStartInfoResolution (CFHostRef theHost, CFHostInfoType info, CFStreamError *error)
+Boolean objc_CFHostStartInfoResolution(CFHostRef theHost, CFHostInfoType info, CFStreamError *error)
 {
     abort();
     Boolean result = origin_CFHostStartInfoResolution(theHost,info,error);

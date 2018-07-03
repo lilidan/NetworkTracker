@@ -59,7 +59,6 @@ API_AVAILABLE(ios(10.0)){
 
 - (void)trackEvent:(NTEventBase *)baseEvent
 {
-
     if ([[baseEvent class] isKindOfClass:[NTDNSEvent class]]) {
         [self trackDNSEvent:(NTDNSEvent *)baseEvent];
         return;

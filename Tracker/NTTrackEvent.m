@@ -195,6 +195,7 @@
         }
         _results = [results copy];
         freeaddrinfo(res0);
+        freeaddrinfo(res);
     }
     return self;
 }
