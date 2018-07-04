@@ -12,7 +12,6 @@
 
 @interface NTTCPItem : NSObject
 
-@property (nonatomic, assign) BOOL isRequest; //request or response
 @property (nonatomic, strong) NSData *data;
 
 @property (nonatomic, strong) NSDate *startDate;
@@ -20,13 +19,18 @@
 
 @property (nonatomic, assign) BOOL viaSSL;
 
+
 @end
 
 @interface NTTCPModel : NTBaseModel
 
 @property (nonatomic,strong) NSMutableArray<NTTCPItem *> *requestItems;
-@property (nonatomic,strong) NSMutableArray<NTTCPItem *> *responssItems;
+@property (nonatomic,strong) NSMutableArray<NTTCPItem *> *responseItems;
+
+@property (nonatomic, strong) NSDate *disconnectStartDate;
+@property (nonatomic, strong) NSDate *disconnectEndDate;
 
 - (void)updateWithEvent:(NTTrackEvent *)event;
+- (void)updateWithDNSEvent:(NTDNSEvent *)event;
 
 @end

@@ -65,7 +65,7 @@ int32_t (*origin_getaddrinfo_async_start)(mach_port_t *p, ...);
             (void *)&origin_CreateDNSLookup
         },
         {
-            "getaddrinfo_async_start",
+            "getaddrinfo_async_starta",
             objc_getaddrinfo_async_start,
             (void *)&origin_getaddrinfo_async_start
         }
@@ -81,7 +81,7 @@ CFTypeRef objc_CreateDNSLookup(int a,...)
 int32_t objc_getaddrinfo_async_start(mach_port_t *p,...)
 {
     abort();
-//    int32_t result = origin_getaddrinfo_async_start(p);
+    int32_t result = origin_getaddrinfo_async_start(p);
     return 1;
 }
 
@@ -99,21 +99,28 @@ int32_t objc_dns_query(dns_handle_t dns, const char *name, uint32_t dnsclass, ui
     return result;
 }
 
+bool isValidIpAddress(const char *ipAddress)
+{
+    struct sockaddr_in sa;
+    int result = inet_pton(AF_INET, ipAddress, &(sa.sin_addr));
+    return result != 0;
+}
+
 int  objc_getaddrinfo(const char *host, const char *port,const struct addrinfo *hints,struct addrinfo ** res)
 {
-    NSDate *startDate = [NSDate date];
     struct addrinfo hint;
-    memset(&hint, 0, sizeof(hint));
-    hint.ai_family = hints->ai_family;
-    hint.ai_socktype = hints->ai_socktype;
-    hint.ai_protocol = hints->ai_protocol;
-    if (host == "www.baidu.com") {
-        host = "www.zhihu.com";
+    if (!isValidIpAddress(host))
+    {
+        memset(&hint, 0, sizeof(hint));
+        hint.ai_family = hints->ai_family;
+        hint.ai_socktype = hints->ai_socktype;
+        hint.ai_protocol = hints->ai_protocol;
+    }else{
+        hint = *hints;
     }
+    NSDate *startDate = [NSDate date];
     int result = origin_getaddrinfo(host,port,&hint,res);
-    
-//    NSString *errMsg = [NSString stringWithCString:gai_strerror(result) encoding:NSASCIIStringEncoding];
-//    [DNSTracker trackEvent:[NTDNSEvent dnsEventWithStartTime:startDate host:host port:port addr:*res]];
+    [DNSTracker trackEvent:[NTDNSEvent dnsEventWithStartTime:startDate host:host port:port addr:*res]];
     return result;
 }
 

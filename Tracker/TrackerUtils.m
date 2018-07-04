@@ -37,7 +37,12 @@
 
 + (NSString *)hostPortFromSockaddr4:(const struct sockaddr_in *)pSockaddr4
 {
-    return [NSString stringWithFormat:@"%@:%d",[self hostFromSockaddr4:pSockaddr4],[self portFromSockaddr4:pSockaddr4]];
+    NSString *host = [self hostFromSockaddr4:pSockaddr4];
+    if (host) {
+        return [NSString stringWithFormat:@"%@:%d",[self hostFromSockaddr4:pSockaddr4],[self portFromSockaddr4:pSockaddr4]];
+    }else{
+        return nil;
+    }
 }
 
 + (NSString *)hostPortFromSocket4:(int)socketFD

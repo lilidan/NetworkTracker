@@ -36,9 +36,9 @@ typedef NS_ENUM(NSUInteger, TrackEventSourceType) {
 @property (nonatomic,assign) TrackEventActionType actionType;
 @property (nonatomic,assign) TrackEventSourceType sourceType;
 
-@property (nonatomic,strong) NSString *url;
+@property (nonatomic,strong) NSString *hostPort;
 @property (nonatomic,strong) NSString *host;
-@property (nonatomic,assign) int port;
+//@property (nonatomic,assign) int port;
 
 @property (nonatomic,strong) NSData *data;
 @property (nonatomic,strong) NSString *content;

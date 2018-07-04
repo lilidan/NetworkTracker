@@ -21,9 +21,6 @@
 
 @property (nonatomic,assign) int fd;
 
-//TODO:待用
-@property (nonatomic,strong) NSString *domain;
-
 @end
 
 @implementation NTTrackEvent
@@ -40,7 +37,7 @@
 
 - (void)setUpWithBuffer:(const void *)buffer length:(size_t)length
 {
-    if (buffer != NULL && self.url != nil) {
+    if (buffer != NULL && self.host != nil) {
         _data = [[NSData alloc] initWithBytes:buffer length:length];
         _content = [[NSString alloc] initWithData:_data encoding:NSUTF8StringEncoding];
     }
@@ -71,9 +68,16 @@
         _fd = fd;
 
         if (addr != NULL) {
-            _url = [TrackerUtils hostFromSockaddr4:addr];
+            _hostPort = [TrackerUtils hostPortFromSockaddr4:addr];
         }else{
-            _url = [TrackerUtils hostPortFromSocket4:fd];
+            _hostPort = [TrackerUtils hostPortFromSocket4:fd];
+        }
+        
+        if (_hostPort) {
+            NSArray *seps = [_hostPort componentsSeparatedByString:@":"];
+            if (seps.count > 0) {
+                _host = seps[0];
+            }
         }
         
         [self setUpWithBuffer:buffer length:length];
@@ -103,13 +107,17 @@
             _fd = [[[NSString alloc] initWithData:fd encoding:NSUTF8StringEncoding] intValue];;
             _host = (__bridge NSString *)CFWriteStreamCopyProperty(stream,kCFStreamPropertySocketRemoteHostName);
             NSString *port = (__bridge NSString *)CFWriteStreamCopyProperty(stream,kCFStreamPropertySocketRemotePortNumber);
-            _url = [NSString stringWithFormat:@"%@:%@",_host,port];
+            if (_host) {
+                _hostPort = [NSString stringWithFormat:@"%@:%@",_host,port];
+            }
         }else{
             NSData *fd = (__bridge NSData *)CFReadStreamCopyProperty(stream,kCFStreamPropertySocketNativeHandle);
             _fd = [[[NSString alloc] initWithData:fd encoding:NSUTF8StringEncoding] intValue];;
             _host = (__bridge NSString *)CFReadStreamCopyProperty(stream,kCFStreamPropertySocketRemoteHostName);
             NSString *port = (__bridge NSString *)CFReadStreamCopyProperty(stream,kCFStreamPropertySocketRemotePortNumber);
-            _url = [NSString stringWithFormat:@"%@:%@",_host,port];
+            if (_host) {
+                _hostPort = [NSString stringWithFormat:@"%@:%@",_host,port];
+            }
         }
         
         [self setUpWithBuffer:buffer length:length];
@@ -147,7 +155,7 @@
         OSStatus getDomain = SSLGetPeerDomainName(context, domainPtr, &domainLen);
         if (getDomain == 0) {
             NSString *domainStr = [[NSString alloc] initWithUTF8String:domainPtr];
-            _url = _host = domainStr;
+            _host = domainStr;
         }
         
         [self setUpWithBuffer:buffer length:length];
@@ -172,30 +180,25 @@
     if (self = [super init]) {
         self.startTime = startTime;
         self.endTime = [NSDate date];
-        if (port != NULL) {
-            _url = [NSString stringWithFormat:@"%s:%s",host,port];
-        }else{
-            _url = [[NSString alloc] initWithCString:host encoding:NSUTF8StringEncoding];
-        }
+        
+        _url = [[NSString alloc] initWithCString:host encoding:NSUTF8StringEncoding];
         
         NSMutableArray *results = [[NSMutableArray alloc] init];
         
         struct addrinfo *res;
         struct addrinfo *res0 = addr;
-        
+
         for (res = res0; res; res = res->ai_next)
         {
             if (res->ai_family == AF_INET)
             {
-                NSString *result = [TrackerUtils hostPortFromSockaddr4:(struct sockaddr_in *)res->ai_addr];
+                NSString *result = [TrackerUtils hostFromSockaddr4:(struct sockaddr_in *)res->ai_addr];
                 if (result) {
                     [results addObject:result];
                 }
             }
         }
         _results = [results copy];
-        freeaddrinfo(res0);
-        freeaddrinfo(res);
     }
     return self;
 }
