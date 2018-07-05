@@ -26,6 +26,7 @@
             }];
         }
         self.request = request;
+        self.remoteURL = request.URL.absoluteString;
     }
     return self;
 }

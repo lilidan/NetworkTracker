@@ -7,10 +7,16 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "NTHTTPModel.h"
+#import "NTWebModel.h"
+#import "NTTCPModel.h"
 
-@class NTEventBase;
 
 @interface NTDataKeeper : NSObject
+
+@property (nonatomic,strong) NSMutableArray<NTHTTPModel *> *httpModels;
+@property (nonatomic,strong) NSMutableArray<NTWebModel *> *webModels;
+@property (nonatomic,strong) NSMutableArray<NTTCPModel *> *tcpModels;
 
 + (instancetype)shareInstance;
 

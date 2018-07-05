@@ -9,7 +9,6 @@
 #import "NTTrackEvent.h"
 #import "TrackerUtils.h"
 #import <sys/socket.h>
-#import "DataKeeper.h"
 #import "netdb.h"
 
 @implementation NTEventBase

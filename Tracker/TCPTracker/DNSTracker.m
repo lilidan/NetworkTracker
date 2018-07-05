@@ -80,7 +80,7 @@ CFTypeRef objc_CreateDNSLookup(int a,...)
 
 int32_t objc_getaddrinfo_async_start(mach_port_t *p,...)
 {
-    abort();
+    abort(); //iOS 10.3 NSURLConnection/UIWebView call
     int32_t result = origin_getaddrinfo_async_start(p);
     return 1;
 }
@@ -133,7 +133,7 @@ struct hostent* objc_gethostbyname(const char *name)
 
 Boolean objc_CFHostStartInfoResolution(CFHostRef theHost, CFHostInfoType info, CFStreamError *error)
 {
-    abort();
+    abort();// iOS8.2  call
     Boolean result = origin_CFHostStartInfoResolution(theHost,info,error);
     return result;
 }

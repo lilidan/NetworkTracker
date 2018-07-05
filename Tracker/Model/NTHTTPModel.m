@@ -34,6 +34,7 @@
         }
         free(propertyArray);
     }
+    self.remoteURL = metrics.request.URL.absoluteString;
 }
 
 - (void)setValue:(id)value forUndefinedKey:(NSString *)key

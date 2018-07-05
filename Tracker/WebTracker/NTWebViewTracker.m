@@ -104,23 +104,29 @@
     if ([NSStringFromSelector(invocation.selector) isEqualToString:@"webView:didFinishNavigation:"]) {
         __unsafe_unretained WKWebView *webView;
         [invocation getArgument:&webView atIndex:2];
-        __strong NSString *funcStr = @"function flatten(obj) {"
-        "var ret = {}; "
-        "for (var i in obj) { "
-        "ret[i] = obj[i];"
-        "}"
-        "return ret;}";
-        [webView evaluateJavaScript:funcStr completionHandler:^(NSString *_Nullable result, NSError * _Nullable error) {
-            if (!error) {
-                [webView evaluateJavaScript:@"JSON.stringify(flatten(window.performance.timing))" completionHandler:^(NSString * _Nullable timingStr, NSError * _Nullable error) {
-                    if (!error) {
-                        [[NTDataKeeper shareInstance] trackWebViewTimingStr:timingStr request:[NSURLRequest requestWithURL:webView.URL]];
-                    }
-                }];
-            }
-        }];
-
-        
+        if (@available(iOS 10.0, *)) {
+            [webView evaluateJavaScript:@"JSON.stringify(window.performance.timing.toJSON())" completionHandler:^(NSString * _Nullable timingStr, NSError * _Nullable error) {
+                if (!error) {
+                    [[NTDataKeeper shareInstance] trackWebViewTimingStr:timingStr request:[NSURLRequest requestWithURL:webView.URL]];
+                }
+            }];
+        }else{
+            NSString *funcStr = @"function flatten(obj) {"
+            "var ret = {}; "
+            "for (var i in obj) { "
+            "ret[i] = obj[i];"
+            "}"
+            "return ret;}";
+            [webView evaluateJavaScript:funcStr completionHandler:^(NSString *_Nullable result, NSError * _Nullable error) {
+                if (!error) {
+                    [webView evaluateJavaScript:@"JSON.stringify(flatten(window.performance.timing))" completionHandler:^(NSString * _Nullable timingStr, NSError * _Nullable error) {
+                        if (!error) {
+                            [[NTDataKeeper shareInstance] trackWebViewTimingStr:timingStr request:[NSURLRequest requestWithURL:webView.URL]];
+                        }
+                    }];
+                }
+            }];
+        }
     }
 }
 

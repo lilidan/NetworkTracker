@@ -13,6 +13,7 @@
 @interface NTBaseModel : NSObject
 
 @property (nonatomic, strong) NSDate *fetchStartDate;
+
 @property (nonatomic, strong) NSDate *domainLookupStartDate;
 @property (nonatomic, strong) NSDate *domainLookupEndDate;
 @property (nonatomic, strong) NSDate *connectStartDate;
@@ -25,6 +26,7 @@
 @property (nonatomic, strong) NSString *remoteAddressAndPort;
 @property (nonatomic, strong) NSString *remoteURL;
 
+
 @end
 
 
@@ -33,10 +35,11 @@
 @property (nonatomic, strong) NSURLRequest *request;
 
 //date time stamp
-@property (nonatomic, strong) NSDate *requestStartDate;
-@property (nonatomic, strong) NSDate *requestEndDate;
 @property (nonatomic, strong) NSDate *responseStartDate;
 @property (nonatomic, strong) NSDate *responseEndDate;
+@property (nonatomic, strong) NSDate *requestStartDate;
+@property (nonatomic, strong) NSDate *requestEndDate;
+
 
 
 @end

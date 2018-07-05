@@ -14,9 +14,7 @@
 
 @interface NTDataKeeper()
 
-@property (nonatomic,strong) NSMutableArray<NTHTTPModel *> *httpModels;
-@property (nonatomic,strong) NSMutableArray<NTWebModel *> *webModels;
-@property (nonatomic,strong) NSMutableArray<NTTCPModel *> *tcpModels;
+
 @property (nonatomic,strong) NSMutableDictionary *currentTcpPairs;
 @property (nonatomic,strong) NSMutableDictionary *dnsPairs;
 
@@ -59,7 +57,7 @@ API_AVAILABLE(ios(10.0)){
 - (void)trackWebViewTimingStr:(NSString *)timingStr request:(NSURLRequest *)request
 {
     dispatch_async(self.workQueue, ^{
-        if (request) {
+        if (request && !request.URL.isFileURL) {
             NTWebModel *model = [[NTWebModel alloc] initWithJsonStr:timingStr request:request];
             [self.webModels addObject:model];
         }
