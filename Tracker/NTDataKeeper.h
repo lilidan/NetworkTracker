@@ -21,6 +21,7 @@
 + (instancetype)shareInstance;
 
 - (void)trackSessionMetrics:(NSURLSessionTaskMetrics *)metrics API_AVAILABLE(ios(10.0));
+- (void)trackTimingData:(NSDictionary *)timingData request:(NSURLRequest *)request;
 - (void)trackWebViewTimingStr:(NSString *)timingStr request:(NSURLRequest *)request;
 - (void)trackEvent:(NTEventBase *)baseEvent;
 

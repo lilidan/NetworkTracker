@@ -11,6 +11,23 @@
 
 @implementation NTHTTPModel
 
+- (instancetype)initWithTimingData:(NSDictionary *)timingData request:(NSURLRequest *)request
+{
+    if (self = [super init]) {
+        [timingData enumerateKeysAndObjectsUsingBlock:^(NSString *  _Nonnull key, NSNumber * _Nonnull obj, BOOL * _Nonnull stop) {
+            NSString *keyStr = [key stringByReplacingOccurrencesOfString:@"_kCFNTimingData" withString:@""];
+            NSString *propsKey = [keyStr stringByAppendingString:@"Date"];
+            if ([obj isKindOfClass:[NSNumber class]] && [obj doubleValue] > 0) {
+                NSDate *date = [NSDate dateWithTimeIntervalSinceReferenceDate:[obj doubleValue]];
+                [self setValue:date forKey:propsKey];
+            }
+        }];
+        self.request = request;
+        self.remoteURL = request.URL.absoluteString;
+    }
+    return self;
+}
+
 - (instancetype)initWithTransactionMetrics:(NSURLSessionTaskTransactionMetrics *)metrics
 {
     if (self = [super init]) {
@@ -41,5 +58,6 @@
 {
     NSLog(@"%@",key);
 }
+
 
 @end

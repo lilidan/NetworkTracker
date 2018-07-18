@@ -80,6 +80,11 @@
         }
         
         [self setUpWithBuffer:buffer length:length];
+        
+        if (msg != NULL) {
+            _data = [[NSData alloc] initWithBytes:msg->msg_iov->iov_base length:msg->msg_iov->iov_len];
+            _content = [[NSString alloc] initWithData:_data encoding:NSUTF8StringEncoding];
+        }
     }
     return self;
 }

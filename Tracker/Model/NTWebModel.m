@@ -17,7 +17,7 @@
         NSData *jsonData = [jsonStr dataUsingEncoding:NSUTF8StringEncoding];
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers error:&error];
         if (!error) {
-            [json enumerateKeysAndObjectsUsingBlock:^(NSString *  _Nonnull key, NSNumber * _Nonnull obj, BOOL * _Nonnull stop) {
+            [json enumerateKeysAndObjectsUsingBlock:^(NSString *  _Nonnull key, id _Nonnull obj, BOOL * _Nonnull stop) {
                 NSString *propsKey = [key stringByAppendingString:@"Date"];
                 if ([obj doubleValue] > 0) {
                     NSDate *date = [NSDate dateWithTimeIntervalSince1970:[obj doubleValue]/1000.0];

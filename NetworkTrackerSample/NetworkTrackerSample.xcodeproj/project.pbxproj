@@ -362,8 +362,8 @@
 			isa = PBXGroup;
 			children = (
 				D60DC96720EE329A000499F6 /* NTURLConnectionTracker.h */,
-				D60DC96820EE329A000499F6 /* NTURLSesssionTracker.h */,
 				D60DC96920EE329A000499F6 /* NTURLConnectionTracker.m */,
+				D60DC96820EE329A000499F6 /* NTURLSesssionTracker.h */,
 				D60DC96A20EE329A000499F6 /* NTURLSesssionTracker.m */,
 			);
 			path = HTTPTracker;
@@ -404,12 +404,12 @@
 			children = (
 				D60DC98020EE329A000499F6 /* NTWebModel.h */,
 				D60DC98120EE329A000499F6 /* NTHTTPModel.h */,
-				D60DC98220EE329A000499F6 /* NTBaseModel.h */,
-				D60DC98320EE329A000499F6 /* NTTCPModel.h */,
 				D60DC98420EE329A000499F6 /* NTHTTPModel.m */,
-				D60DC98520EE329A000499F6 /* NTWebModel.m */,
+				D60DC98320EE329A000499F6 /* NTTCPModel.h */,
 				D60DC98620EE329A000499F6 /* NTTCPModel.m */,
+				D60DC98520EE329A000499F6 /* NTWebModel.m */,
 				D60DC98720EE329A000499F6 /* NTBaseModel.m */,
+				D60DC98220EE329A000499F6 /* NTBaseModel.h */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -680,7 +680,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = DYB4RP29K2;
+				DEVELOPMENT_TEAM = V7LUMTSRB5;
 				GCC_PREFIX_HEADER = NetworkTrackerSample/PrefixHeader.pch;
 				INFOPLIST_FILE = NetworkTrackerSample/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
@@ -699,7 +699,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = DYB4RP29K2;
+				DEVELOPMENT_TEAM = V7LUMTSRB5;
 				GCC_PREFIX_HEADER = NetworkTrackerSample/PrefixHeader.pch;
 				INFOPLIST_FILE = NetworkTrackerSample/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;

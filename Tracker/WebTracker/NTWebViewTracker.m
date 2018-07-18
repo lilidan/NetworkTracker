@@ -40,7 +40,6 @@
         [webView stringByEvaluatingJavaScriptFromString:funcStr];
         NSString *timingStr = [webView stringByEvaluatingJavaScriptFromString:@"JSON.stringify(flatten(window.performance.timing))"];
         [[NTDataKeeper shareInstance] trackWebViewTimingStr:timingStr request:webView.request];
-        
     }
 }
 

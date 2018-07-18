@@ -24,5 +24,6 @@
 
 
 - (instancetype)initWithTransactionMetrics:(NSURLSessionTaskTransactionMetrics *)metrics API_AVAILABLE(ios(10.0));
+- (instancetype)initWithTimingData:(NSDictionary *)timingData request:(NSURLRequest *)request;
 
 @end

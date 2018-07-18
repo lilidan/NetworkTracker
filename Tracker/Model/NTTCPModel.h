@@ -30,6 +30,13 @@
 @property (nonatomic, strong) NSDate *disconnectStartDate;
 @property (nonatomic, strong) NSDate *disconnectEndDate;
 
+@property (nonatomic, strong) NSDate *firstRequestStartDate;
+@property (nonatomic, strong) NSDate *firstRequestEndDate;
+
+@property (nonatomic, strong) NSDate *firstResponseStartDate;
+@property (nonatomic, strong) NSDate *firstResponseEndDate;
+
+
 - (void)updateWithEvent:(NTTrackEvent *)event;
 - (void)updateWithDNSEvent:(NTDNSEvent *)event;
 

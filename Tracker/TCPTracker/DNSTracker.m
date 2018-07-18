@@ -18,13 +18,15 @@
 @implementation DNSTracker
 
 int (*origin_getaddrinfo)(const char *, const char * __restrict,const struct addrinfo *,struct addrinfo **);
-int32_t (*origin_dns_async_start)(mach_port_t *p, const char *name, uint16_t dnsclass, uint16_t dnstype, uint32_t do_search, void* callback, void *context);
+int32_t (*origin_dns_async_start)(int,...);
 struct hostent* (*origin_gethostbyname)(const char *);
 Boolean (*origin_CFHostStartInfoResolution) (CFHostRef theHost, CFHostInfoType info, CFStreamError *error);
 int (*origin_res_9_query)(const char *dname, int class, int type, unsigned char *answer, int anslen);
 int32_t (*origin_dns_query)(dns_handle_t dns, const char *name, uint32_t dnsclass, uint32_t dnstype, char *buf, uint32_t len, struct sockaddr *from, uint32_t *fromlen);
-mach_port_t (*origin_CreateDNSLookup)(int a,...);
+int (*origin_CreateDNSLookup)(void const*);
 int32_t (*origin_getaddrinfo_async_start)(mach_port_t *p, ...);
+
+//getaddrinfo_async_start iOS 10.3
 
 + (void)load
 {
@@ -60,22 +62,22 @@ int32_t (*origin_getaddrinfo_async_start)(mach_port_t *p, ...);
             (void *)&origin_dns_query
         },
         {
-            "_CreateDNSLookup",
+            "_startTLS",
             objc_CreateDNSLookup,
             (void *)&origin_CreateDNSLookup
         },
         {
-            "getaddrinfo_async_starta",
+            "getaddrinfo_async_start",
             objc_getaddrinfo_async_start,
             (void *)&origin_getaddrinfo_async_start
         }
     }, 8);
 }
 
-CFTypeRef objc_CreateDNSLookup(int a,...)
+int objc_CreateDNSLookup(void const*value)
 {
-    abort();
-    return NULL;
+    NSLog(@"-----");
+    return origin_CreateDNSLookup(value);
 }
 
 int32_t objc_getaddrinfo_async_start(mach_port_t *p,...)
@@ -138,11 +140,12 @@ Boolean objc_CFHostStartInfoResolution(CFHostRef theHost, CFHostInfoType info, C
     return result;
 }
 
-int32_t objc_dns_async_start(mach_port_t *p, const char *name, uint16_t dnsclass, uint16_t dnstype, uint32_t do_search, void* callback, void *context)
+int32_t objc_dns_async_start(int a,...)
 {
     abort();
-    int32_t result = origin_dns_async_start(p,name,dnsclass,dnstype,do_search,callback,context);
-    return result;
+//    int32_t result = origin_dns_async_start(p,name,dnsclass,dnstype,do_search,callback,context);
+//    return result;
+    return 0;
 }
 
 

@@ -54,6 +54,14 @@ API_AVAILABLE(ios(10.0)){
     });
 }
 
+- (void)trackTimingData:(NSDictionary *)timingData request:(NSURLRequest *)request
+{
+    dispatch_async(self.workQueue, ^{
+        NTHTTPModel *model = [[NTHTTPModel alloc] initWithTimingData:timingData request:request];
+        [self.httpModels addObject:model];
+    });
+}
+
 - (void)trackWebViewTimingStr:(NSString *)timingStr request:(NSURLRequest *)request
 {
     dispatch_async(self.workQueue, ^{
@@ -75,6 +83,11 @@ API_AVAILABLE(ios(10.0)){
         
         NTTrackEvent *event = (NTTrackEvent *)baseEvent;
         if (!event.host) {
+            return;
+        }
+        
+        NSArray *compo = [event.host componentsSeparatedByString:@"."];
+        if ([compo[0] isEqualToString:@"0"] ||[compo[1] isEqualToString:@"0"]) {
             return;
         }
          
