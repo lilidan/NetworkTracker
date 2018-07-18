@@ -31,16 +31,20 @@
     if ([NSStringFromSelector(invocation.selector) isEqualToString:@"webViewDidFinishLoad:"]) {
         __unsafe_unretained UIWebView *webView;
         [invocation getArgument:&webView atIndex:2];
-        __strong NSString *funcStr = @"function flatten(obj) {"
-        "var ret = {}; "
-        "for (var i in obj) { "
-        "ret[i] = obj[i];"
-        "}"
-        "return ret;}";
-        [webView stringByEvaluatingJavaScriptFromString:funcStr];
-        NSString *timingStr = [webView stringByEvaluatingJavaScriptFromString:@"JSON.stringify(flatten(window.performance.timing))"];
-        [[NTDataKeeper shareInstance] trackWebViewTimingStr:timingStr request:webView.request];
-        
+        if (@available(iOS 10.0, *)) {
+            NSString *timingStr = [webView stringByEvaluatingJavaScriptFromString:@"JSON.stringify(window.performance.timing.toJSON())"];
+            [[NTDataKeeper shareInstance] trackWebViewTimingStr:timingStr request:webView.request];
+        }else{
+            __strong NSString *funcStr = @"function flatten(obj) {"
+            "var ret = {}; "
+            "for (var i in obj) { "
+            "ret[i] = obj[i];"
+            "}"
+            "return ret;}";
+            [webView stringByEvaluatingJavaScriptFromString:funcStr];
+            NSString *timingStr = [webView stringByEvaluatingJavaScriptFromString:@"JSON.stringify(flatten(window.performance.timing))"];
+            [[NTDataKeeper shareInstance] trackWebViewTimingStr:timingStr request:webView.request];
+        }
     }
 }
 
