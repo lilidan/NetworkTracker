@@ -19,6 +19,7 @@
 #import "NTDataKeeper.h"
 #import <WebKit/WebKit.h>
 #import "NTChartViewController.h"
+#import <CFNetwork/CFNetwork.h>
 
 @interface ViewController ()<NSURLConnectionDataDelegate,NSURLSessionTaskDelegate,UIWebViewDelegate,WKNavigationDelegate,UITableViewDelegate,UITableViewDataSource>
 
@@ -30,6 +31,11 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+//    SEL selector = NSSelectorFromString(@"_setCollectsTimingData:");
+//    [NSURLConnection performSelector:selector withObject:@(YES)];
+
+    
     
     NSArray *urls = @[@"https://www.baidu.com",@"https://www.github.com",@"https://www.google.com.hk",@"https://www.taobao.com",@"https://www.twitter.com/",@"https://www.facebook.com"];
     _urls = urls;
@@ -44,14 +50,37 @@
 
 - (void)loadNSURLSession
 {
-    NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:[NSOperationQueue mainQueue]];
+    NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+//    SEL selector = NSSelectorFromString(@"set_collectsTimingData:");
+//    [config performSelector:selector withObject:@(YES)];
+    
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:[NSOperationQueue mainQueue]];
     
     for (NSString *url in self.urls) {
         NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:url]];
         // Do any additional setup after loading the view, typically from a nib
-        NSURLSessionTask *task = [session dataTaskWithRequest:request];
-        [task resume];
+//        NSURLSessionTask *task = [session dataTaskWithRequest:request];
+//        [task resume];
+
+        NSURLConnection *conn = [[NSURLConnection alloc] initWithRequest:request delegate:self];
+        [conn start];
+
+//        NSLog(@"");
     }
+}
+
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
+{
+//    SEL selector = NSSelectorFromString(@"_timingData");
+//    id timingData = [task performSelector:selector];
+    NSLog(@"");
+}
+
+- (void)connectionDidFinishLoading:(NSURLConnection *)connection
+{
+//    SEL selector = NSSelectorFromString(@"_timingData");
+//    id timingData = [connection performSelector:selector];
+    NSLog(@"");
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -107,7 +136,7 @@
         }else{
             WKWebView *wkwebView = [[WKWebView alloc] initWithFrame:self.view.bounds];
             [wkwebView loadRequest:request];
-            [self.view addSubview:wkwebView];
+            [vc.view addSubview:wkwebView];
             wkwebView.navigationDelegate = self;
         }
         [self.navigationController pushViewController:vc animated:YES];
@@ -157,16 +186,19 @@
 }
 
 
-- (void)connectionDidFinishLoading:(NSURLConnection *)connection
-{
-    //    NSString *topAppsString = [[NSString alloc] initWithData:_mutdata encoding:NSUTF8StringEncoding];
-    //    NSLog(@"%@",topAppsString);
-    [NTDataKeeper shareInstance];
-}
-
+//- (void)connectionDidFinishLoading:(NSURLConnection *)connection
+//{
+//    //    NSString *topAppsString = [[NSString alloc] initWithData:_mutdata encoding:NSUTF8StringEncoding];
+//    //    NSLog(@"%@",topAppsString);
+//    [NTDataKeeper shareInstance];
+//}
+//
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
+    
+    SEL selector = NSSelectorFromString(@"_timingData");
+    id timingData = [connection performSelector:selector];
     dispatch_async(dispatch_get_main_queue(), ^{
         NSLog(@"接受数据中。。。。。%@",response);
     });

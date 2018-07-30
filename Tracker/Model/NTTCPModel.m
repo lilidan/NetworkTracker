@@ -70,5 +70,39 @@
     self.remoteURL = event.url;
 }
 
+- (NSDate *)firstRequestEndDate
+{
+    if (self.requestItems.count > 0) {
+        return [self.requestItems[0] endDate];
+    }
+    return nil;
+}
+
+- (NSDate *)firstRequestStartDate
+{
+    if (self.requestItems.count > 0) {
+        return [self.requestItems[0] startDate];
+    }
+    return nil;
+}
+
+- (NSDate *)firstResponseStartDate
+{
+    if (self.responseItems.count > 0) {
+        return [self.responseItems[0] startDate];
+    }
+    return nil;
+}
+
+- (NSDate *)firstResponseEndDate
+{
+    if (self.responseItems.count > 0) {
+        return [self.responseItems[0] endDate];
+    }
+    return nil;
+}
+
+
+
 
 @end

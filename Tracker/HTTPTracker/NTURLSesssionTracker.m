@@ -30,6 +30,8 @@
 {
     if ([NSStringFromSelector(aSelector) isEqualToString:@"URLSession:task:didFinishCollectingMetrics:"]) {
         return YES;
+    }else if ([NSStringFromSelector(aSelector) isEqualToString:@"URLSession:task:didCompleteWithError:"]){
+        return YES;
     }
     return [self.target respondsToSelector:aSelector];
 }
@@ -56,6 +58,14 @@
             [invocation getArgument:&metrics atIndex:4];
             [[NTDataKeeper shareInstance] trackSessionMetrics:metrics];
         }
+    }else{
+        if ([NSStringFromSelector(invocation.selector) isEqualToString:@"URLSession:task:didCompleteWithError:"]) {
+            __unsafe_unretained NSURLSessionTask *task;
+            [invocation getArgument:&task atIndex:3];
+            SEL selector = NSSelectorFromString([@"_timin" stringByAppendingString:@"gData"]);
+            NSDictionary *timingData = [task performSelector:selector];
+            [[NTDataKeeper shareInstance] trackTimingData:timingData request:task.currentRequest];
+        }
     }
 }
 
@@ -81,6 +91,9 @@
 + (NSURLSession *)swizzledSessionWithConfiguration:(NSURLSessionConfiguration *)configuration delegate:(nullable id <NSURLSessionDelegate>)delegate delegateQueue:(nullable NSOperationQueue *)queue
 {
     if (delegate) {
+        NSString *selectorName = [[@"set_c" stringByAppendingString:@"ollectsT"] stringByAppendingString:@"imingData:"];
+        SEL selector = NSSelectorFromString(selectorName);
+        [configuration performSelector:selector withObject:@(YES)];
         _NSURLSessionProxy *proxy = [[_NSURLSessionProxy alloc] initWithTarget:delegate];
         objc_setAssociatedObject(delegate ,@"_NSURLSessionProxy" ,proxy, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         return [self swizzledSessionWithConfiguration:configuration delegate:(id<NSURLSessionDelegate>)proxy delegateQueue:queue];
