@@ -16,10 +16,10 @@ Supports HTTP/WebView/TCP.
 
 |iOS SDK|NSURLConnetion|NSURLSession|UIWebView|WKWebView|CocoaAyncSocket
 |-| - | -| - | -| - |
-|8.4| via TCP | via TCP  | via TCP | via TCP | YES |
-|9.3| via TCP|via TCP | YES| YES|YES|
-|10.3| via TCP ?|YES| YES| YES|YES|
-|11.3| NO |YES| YES| YES|YES|
+|8.4| YES | YES  | via TCP | via TCP | YES |
+|9.3| YES | YES | YES| YES|YES|
+|10.3| YES | YES| YES| YES|YES|
+|11.3| YES |YES| YES| YES|YES|
 
 # performance
 
