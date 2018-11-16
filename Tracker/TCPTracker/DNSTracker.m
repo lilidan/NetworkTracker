@@ -26,7 +26,7 @@ int32_t (*origin_getaddrinfo_async_start)(mach_port_t *p, ...);
 
 + (void)load
 {
-    rcd_rebind_symbols((struct rcd_rebinding[8]){
+    rcd_rebind_symbols((struct rcd_rebinding[6]){
         {
             "getaddrinfo",
             objc_getaddrinfo,
@@ -58,7 +58,7 @@ int32_t (*origin_getaddrinfo_async_start)(mach_port_t *p, ...);
             objc_getaddrinfo_async_start,
             (void *)&origin_getaddrinfo_async_start
         }
-    }, 8);
+    }, 6);
 }
 
 int objc_CreateDNSLookup(void const*value)
@@ -69,14 +69,14 @@ int objc_CreateDNSLookup(void const*value)
 
 int32_t objc_getaddrinfo_async_start(mach_port_t *p,...)
 {
-    abort(); //iOS 10.3 NSURLConnection/UIWebView call
+//    abort(); //iOS 10.3 NSURLConnection/UIWebView call
     int32_t result = origin_getaddrinfo_async_start(p);
     return 1;
 }
 
 int objc_res_9_query(const char *dname, int class, int type, unsigned char *answer, int anslen)
 {
-    abort();
+//    abort();
     int result = origin_res_9_query(dname,class,type,answer,anslen);
     return result;
 }
@@ -115,14 +115,14 @@ int  objc_getaddrinfo(const char *host, const char *port,const struct addrinfo *
 
 struct hostent* objc_gethostbyname(const char *name)
 {
-    abort();
+//    abort();
     struct hostent* result = origin_gethostbyname(name);
     return result;
 }
 
 int32_t objc_dns_async_start(int a,...)
 {
-    abort();
+//    abort();
 //    int32_t result = origin_dns_async_start(p,name,dnsclass,dnstype,do_search,callback,context);
 //    return result;
     return 0;
