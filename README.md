@@ -1,5 +1,7 @@
 # NetworkTracker
 
+[实现原理](https://www.jianshu.com/p/1c34147030d1)
+
 An iOS library for network tracking.It can be used to evaluate performance or capture packets.
 
 Supports HTTP/WebView/TCP.
