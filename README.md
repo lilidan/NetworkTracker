@@ -45,3 +45,11 @@ For those lower than iOS 10.0, we also use BSD Socket APIs to collect part of da
 # Installation
 
 Drag and use.
+
+
+# 目前的问题
+
+部分数据根据部分机型和SDK会导致无法收集完全。
+DNSTracker.m可能会导致崩溃，该类可以完全注释掉不影响使用
+
+精力有限停止维护
